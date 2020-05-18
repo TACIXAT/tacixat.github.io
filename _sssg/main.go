@@ -27,8 +27,8 @@ type PostData struct {
 	Raw   template.HTML
 }
 
-func writeTemplate(t string, o string, d interface{}) error {
-	it, err := template.ParseFiles(t)
+func writeTemplate(t []string, o string, d interface{}) error {
+	it, err := template.ParseFiles(t...)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func writeTemplate(t string, o string, d interface{}) error {
 	}
 	defer f.Close()
 
-	return it.Execute(f, d)
+	return it.ExecuteTemplate(f, "base.gohtml", d)
 }
 
 func windowsBad(b []byte) []byte {
@@ -82,9 +82,16 @@ func main() {
 
 		pd.Raw = template.HTML(blackfriday.Run(md))
 		writeTemplate(
-			"_templates/post.gohtml", fmt.Sprintf("posts/%s.html", pd.Title), pd)
+			[]string{
+				"_templates/post.gohtml",
+				"_templates/base.gohtml",
+			}, fmt.Sprintf("posts/%s.html", pd.Title), pd)
 		id.Posts = append(id.Posts, pd.Title)
 	}
 
-	writeTemplate("_templates/index.gohtml", "index.html", id)
+	writeTemplate(
+		[]string{
+			"_templates/index.gohtml",
+			"_templates/base.gohtml",
+		}, "index.html", id)
 }

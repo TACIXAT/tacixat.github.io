@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<title>TACIX.AT - {{ .Title }}</title>
-</head>
-<body>
-	<div>Posted: {{ .Date }}</div>
-	<div>
+{{ define "main" }}
+  <div>Posted: {{ .Date }}</div>
+  <div>
 {{ .Raw }}
-	</div>
-</body>
-</html>
+  </div>
+{{ end }}
