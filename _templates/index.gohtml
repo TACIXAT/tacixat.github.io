@@ -22,7 +22,7 @@
   {{ range $p := .Posts }}
     <div class=entry>
       <div class=date>{{ $p.Datef }}</div>
-      <div class=post><a href="/posts/{{ $p.Title }}.html">{{ $p.Title }}</a></div>
+      <div class=post><a href="/posts/{{ $p.Meta.Title }}.html">{{ $p.Meta.Title }}</a></div>
     </div>
   {{ end }}
 {{ end }}

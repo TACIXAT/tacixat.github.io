@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/alecthomas/chroma/formatters/html"
 	"github.com/BurntSushi/toml"
+	"github.com/alecthomas/chroma/formatters/html"
 	"gopkg.in/russross/blackfriday.v2"
 	"html/template"
 	"io/ioutil"
@@ -17,19 +17,26 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
+type MetaData struct {
+	Title       string
+	Description string
+}
+
 type IndexData struct {
+	Meta  MetaData
 	Posts []PostData
 }
 
 type PostData struct {
-	Title string
-	Tags  []string
-	Date  time.Time
-	Raw   template.HTML
+	Meta MetaData
+	Tags []string
+	Date time.Time
+	Raw  template.HTML
 }
 
 type AboutData struct {
-	Raw   template.HTML
+	Meta MetaData
+	Raw  template.HTML
 }
 
 // Mon Jan 2 15:04:05 -0700 MST 2006
@@ -94,7 +101,7 @@ func genPosts(id *IndexData) {
 			[]string{
 				"_templates/post.gohtml",
 				"_templates/base.gohtml",
-			}, fmt.Sprintf("posts/%s.html", pd.Title), pd)
+			}, fmt.Sprintf("posts/%s.html", pd.Meta.Title), pd)
 		id.Posts = append(id.Posts, pd)
 	}
 }
@@ -108,7 +115,12 @@ func genAbout() {
 
 	md = windowsBad(md)
 
-	ad := AboutData{}
+	ad := AboutData{
+		Meta: MetaData{
+			Title:       "About",
+			Description: "The handful of ways by which the author defines himself.",
+		},
+	}
 	ad.Raw = template.HTML(blackfriday.Run(md))
 
 	writeTemplate(
@@ -120,6 +132,10 @@ func genAbout() {
 
 func main() {
 	id := &IndexData{
+		Meta: MetaData{
+			Title:       "Home",
+			Description: "A very rad blog.",
+		},
 		Posts: []PostData{},
 	}
 
