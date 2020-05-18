@@ -73,15 +73,12 @@ func main() {
 		}
 		md = bytes.Join(s[1:], []byte("\n---\n"))
 
-		fmt.Println(string(s[0]))
 		var pd PostData
 		_, err = toml.Decode(string(s[0]), &pd)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-
-		fmt.Println(pd)
 
 		pd.Raw = template.HTML(blackfriday.Run(md))
 		writeTemplate(

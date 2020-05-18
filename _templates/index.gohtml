@@ -2,10 +2,22 @@
 <html>
 <head>
 	<title>TACIX.AT</title>
+	<style>
+		body {
+			width: 100%;
+		}
+
+		#main {
+			width: 960px;
+			margin: 0 auto;
+		}
+	</style>
 </head>
 <body>
-{{ range $p := .Posts }}
-	<div><a href="/posts/{{ $p }}.html">{{ $p }}</a></div>
-{{ end }}
+	<div id=main>
+	{{ range $p := .Posts }}
+		<div><a href="/posts/{{ $p }}.html">{{ $p }}</a></div>
+	{{ end }}
+	</div>
 </body>
 </html>
