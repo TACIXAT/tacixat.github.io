@@ -17,7 +17,7 @@ func init() {
 }
 
 type IndexData struct {
-	Posts []string
+	Posts []PostData
 }
 
 type PostData struct {
@@ -25,6 +25,11 @@ type PostData struct {
 	Tags  []string
 	Date  time.Time
 	Raw   template.HTML
+}
+
+// Mon Jan 2 15:04:05 -0700 MST 2006
+func (pd PostData) Datef() string {
+	return pd.Date.Format("2006/01/02 15:04")
 }
 
 func writeTemplate(t []string, o string, d interface{}) error {
@@ -48,7 +53,7 @@ func windowsBad(b []byte) []byte {
 
 func main() {
 	id := IndexData{
-		Posts: []string{},
+		Posts: []PostData{},
 	}
 
 	files, err := ioutil.ReadDir("_posts")
@@ -86,7 +91,7 @@ func main() {
 				"_templates/post.gohtml",
 				"_templates/base.gohtml",
 			}, fmt.Sprintf("posts/%s.html", pd.Title), pd)
-		id.Posts = append(id.Posts, pd.Title)
+		id.Posts = append(id.Posts, pd)
 	}
 
 	writeTemplate(

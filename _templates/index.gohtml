@@ -1,5 +1,10 @@
+{{ define "css" }}
+    
+{{ end }}
+
 {{ define "main" }}
   {{ range $p := .Posts }}
+    <div>{{ .Datef }}</div>
     <div><a class=post href="/posts/{{ $p }}.html">{{ $p }}</a></div>
   {{ end }}
 {{ end }}
