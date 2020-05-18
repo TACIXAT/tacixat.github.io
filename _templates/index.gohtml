@@ -1,10 +1,23 @@
 {{ define "css" }}
-    
+    .entry {
+      padding: 30px 0px;
+    }
+
+    .date {
+      font-size: 18px;
+      font-style: italic;
+    }
+
+    .post {
+      padding: 10px 0px;
+    }
 {{ end }}
 
 {{ define "main" }}
   {{ range $p := .Posts }}
-    <div>{{ $p.Datef }}</div>
-    <div><a class=post href="/posts/{{ $p.Title }}.html">{{ $p.Title }}</a></div>
+    <div class=entry>
+      <div class=date>{{ $p.Datef }}</div>
+      <div class=post><a href="/posts/{{ $p.Title }}.html">{{ $p.Title }}</a></div>
+    </div>
   {{ end }}
 {{ end }}

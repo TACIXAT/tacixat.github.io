@@ -51,11 +51,7 @@ func windowsBad(b []byte) []byte {
 	return bytes.Replace(b, []byte("\r\n"), []byte("\n"), -1)
 }
 
-func main() {
-	id := IndexData{
-		Posts: []PostData{},
-	}
-
+func genPosts(id *IndexData) {
 	files, err := ioutil.ReadDir("_posts")
 	if err != nil {
 		log.Fatal(err)
@@ -93,10 +89,24 @@ func main() {
 			}, fmt.Sprintf("posts/%s.html", pd.Title), pd)
 		id.Posts = append(id.Posts, pd)
 	}
+}
+
+func genAbout() {
+	
+}
+
+func main() {
+	id := &IndexData{
+		Posts: []PostData{},
+	}
+
+	genPosts(id)
 
 	writeTemplate(
 		[]string{
 			"_templates/index.gohtml",
 			"_templates/base.gohtml",
 		}, "index.html", id)
+
+	genAbout()
 }
