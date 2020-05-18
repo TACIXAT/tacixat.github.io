@@ -1,71 +1,79 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>TACIX.AT</title>
-	<style>
-		header {
-			width: 960px;
-			margin: 0 auto;
-			display: flex;
-			flex-direction: row;
-		}
+  <title>TACIX.AT</title>
+  <style>
+    header {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+    }
 
-		body {
-			width: 100%;
-			font-family: Roboto,Helvetica,Arial,sans-serif;
-			color: #EEE;
-			background-color: #333;
-		}
+    body {
+      width: 100%;
+      font-family: monospace;
+      color: #EEE;
+      background-color: #333;
+    }
 
-		footer {
-			width: 960px;
-			margin: 0 auto;
-			display: flex;
-			flex-direction: row;
-		}
+    footer {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+    }
 
-		a {
-			color: #EEE;
-		}
+    a {
+      color: #EEE;
+      text-decoration: none;
+    }
 
-		a:visited {
-			color: #DDD;
-		}
+    a:hover {
+      text-decoration: underline;
+    }
 
-		#title {
-			flex-grow: 1;
-			font-size: 26px;
-		}
+    a:visited {
+      color: #DDD;
+    }
 
-		#about {
-			font-size: 24px;
-		}
+    #title {
+      flex-grow: 1;
+      font-size: 32px;
+      font-weight: 300;
+      padding: 10px 0px;
+    }
 
-		#main {
-			width: 960px;
-			margin: 0 auto;
-			display: flex;
-			flex-direction: column;
-		}
+    #about {
+      font-size: 24px;
+    }
 
-		.post {
-			font-size: 24px;
-		}
-	</style>
+    #main {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      padding: 30px 0px;
+    }
+
+    .post {
+      font-size: 24px;
+    }
+  </style>
 </head>
 <body>
-	<header>
-		<span id=title>TACIX.AT</span>
-		<span id=about><a href=/about>About</a></span>
-	</header>
+  <header>
+    <span id=title>TACIX.AT</span>
+    <span id=about><a href=/about>About</a></span>
+  </header>
 
-	<div id=main>
-	
-		<div><a class=post href="/posts/blah.html">blah</a></div>
-	
-	</div>
+  <div id=main>
+  
+    <div><a class=post href="/posts/blah.html">blah</a></div>
+  
+  </div>
 
-	<footer>
-	</footer>
+  <footer>
+  </footer>
 </body>
 </html>
