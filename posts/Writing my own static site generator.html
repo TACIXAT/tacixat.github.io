@@ -111,6 +111,16 @@
       border-radius: 4px;
     }
 
+    pre {
+      overflow: scroll;
+    }
+
+    @media only screen and (max-width: 959px) {
+      body {
+        font-size: 18px;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -148,41 +158,41 @@
 }
 </pre>
 <p>Since the heart of things is the <code>genPosts</code> function, we&rsquo;ll look at that. The first block is listing out the markdown files in the <code>_posts</code> folder. Then we kick it off looping over those and generating an HTML file for each.</p>
-<pre style="color:#f8f8f2;background-color:#272822">	<span style="color:#a6e22e">files</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadDir</span>(<span style="color:#e6db74">&#34;_posts&#34;</span>)
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
-	}
+<pre style="color:#f8f8f2;background-color:#272822"><span style="color:#a6e22e">files</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadDir</span>(<span style="color:#e6db74">&#34;_posts&#34;</span>)
+<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+}
 
-	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">f</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">files</span> {
-		<span style="color:#f92672">...</span>
-	}
+<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">f</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">files</span> {
+	<span style="color:#f92672">...</span>
+}
 </pre>
-<p>The first step is reading the file in, which is pretty straight forward Go code.</p>
-<pre style="color:#f8f8f2;background-color:#272822">		<span style="color:#a6e22e">md</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#e6db74">&#34;_posts/&#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">f</span>.<span style="color:#a6e22e">Name</span>())
-		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
-			<span style="color:#66d9ef">continue</span>
-		}
+<p>In our for loop, the first step is reading the file in, which is pretty straight forward Go code.</p>
+<pre style="color:#f8f8f2;background-color:#272822"><span style="color:#a6e22e">md</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#e6db74">&#34;_posts/&#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">f</span>.<span style="color:#a6e22e">Name</span>())
+<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
+	<span style="color:#66d9ef">continue</span>
+}
 </pre>
 <p>Now I jumped right into rendering the markdown using Blackfriday and I kept getting awful parser errors. I was seriously wondering how such a buggy repo could have so many stars! It was user error though. I&rsquo;m on a Windows host, and the <code>\r\n</code> is apparently not handled by Blackfriday! This was the most time consuming thing of the project. That gives us this beautiful function which is just a <code>bytes.Replace()</code>.</p>
-<pre style="color:#f8f8f2;background-color:#272822">		<span style="color:#a6e22e">md</span> = <span style="color:#a6e22e">windowsBad</span>(<span style="color:#a6e22e">md</span>)
+<pre style="color:#f8f8f2;background-color:#272822"><span style="color:#a6e22e">md</span> = <span style="color:#a6e22e">windowsBad</span>(<span style="color:#a6e22e">md</span>)
 </pre>
 <p>In my review of SSGs I noticed they all had some metadata at the top of the file. This is called <em>Front Matter</em>. It seemed simple enough, you have some JSON, YAML, or TOML followed by a delimeter. I chose TOML since I had never used it before. I have a strange affinity for JSON but it is kinda a pain to write. I chose the delimiter <code>---</code>.</p>
 
 <p>Simply split on that, grab the chunk before and treat it as TOML, rejoin the chunk after and treat it as markdown.</p>
-<pre style="color:#f8f8f2;background-color:#272822">		<span style="color:#a6e22e">s</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">bytes</span>.<span style="color:#a6e22e">Split</span>(<span style="color:#a6e22e">md</span>, []byte(<span style="color:#e6db74">&#34;\n---\n&#34;</span>))
-		<span style="color:#66d9ef">if</span> len(<span style="color:#a6e22e">s</span>) &lt; <span style="color:#ae81ff">2</span> {
-			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Missing post metadata.&#34;</span>)
-			<span style="color:#66d9ef">continue</span>
-		}
-		<span style="color:#a6e22e">md</span> = <span style="color:#a6e22e">bytes</span>.<span style="color:#a6e22e">Join</span>(<span style="color:#a6e22e">s</span>[<span style="color:#ae81ff">1</span>:], []byte(<span style="color:#e6db74">&#34;\n---\n&#34;</span>))
+<pre style="color:#f8f8f2;background-color:#272822"><span style="color:#a6e22e">s</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">bytes</span>.<span style="color:#a6e22e">Split</span>(<span style="color:#a6e22e">md</span>, []byte(<span style="color:#e6db74">&#34;\n---\n&#34;</span>))
+<span style="color:#66d9ef">if</span> len(<span style="color:#a6e22e">s</span>) &lt; <span style="color:#ae81ff">2</span> {
+	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Missing post metadata.&#34;</span>)
+	<span style="color:#66d9ef">continue</span>
+}
+<span style="color:#a6e22e">md</span> = <span style="color:#a6e22e">bytes</span>.<span style="color:#a6e22e">Join</span>(<span style="color:#a6e22e">s</span>[<span style="color:#ae81ff">1</span>:], []byte(<span style="color:#e6db74">&#34;\n---\n&#34;</span>))
 
-		<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">pd</span> <span style="color:#a6e22e">PostData</span>
-		<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">toml</span>.<span style="color:#a6e22e">Decode</span>(string(<span style="color:#a6e22e">s</span>[<span style="color:#ae81ff">0</span>]), <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">pd</span>)
-		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
-			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
-			<span style="color:#66d9ef">continue</span>
-		}
+<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">pd</span> <span style="color:#a6e22e">PostData</span>
+<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">toml</span>.<span style="color:#a6e22e">Decode</span>(string(<span style="color:#a6e22e">s</span>[<span style="color:#ae81ff">0</span>]), <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">pd</span>)
+<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
+	<span style="color:#66d9ef">continue</span>
+}
 </pre>
 <p>The TOML reads right into the <code>PostData</code> struct. We have a post title and a date. The tags aren&rsquo;t used right now, but it should be easy enough to whip up some JS for filtering, or individual pages for each tag. The field <code>Raw</code> is where the markdown rendered to HTML goes.</p>
 <pre style="color:#f8f8f2;background-color:#272822"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">PostData</span> <span style="color:#66d9ef">struct</span> {
@@ -193,16 +203,16 @@
 }
 </pre>
 <p>After that we render and pass <code>PostData</code> to our templates. Then we append the post to the <code>IndexData</code> structure we passed in so we can go back and write out the index.</p>
-<pre style="color:#f8f8f2;background-color:#272822">		<span style="color:#a6e22e">pd</span>.<span style="color:#a6e22e">Raw</span> = <span style="color:#a6e22e">template</span>.<span style="color:#a6e22e">HTML</span>(
-			<span style="color:#a6e22e">blackfriday</span>.<span style="color:#a6e22e">Run</span>(
-				<span style="color:#a6e22e">md</span>, <span style="color:#a6e22e">blackfriday</span>.<span style="color:#a6e22e">WithRenderer</span>(
-					<span style="color:#a6e22e">NewChromaRenderer</span>())))
-		<span style="color:#a6e22e">writeTemplate</span>(
-			[]<span style="color:#66d9ef">string</span>{
-				<span style="color:#e6db74">&#34;_templates/post.gohtml&#34;</span>,
-				<span style="color:#e6db74">&#34;_templates/base.gohtml&#34;</span>,
-			}, <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Sprintf</span>(<span style="color:#e6db74">&#34;posts/%s.html&#34;</span>, <span style="color:#a6e22e">pd</span>.<span style="color:#a6e22e">Title</span>), <span style="color:#a6e22e">pd</span>)
-		<span style="color:#a6e22e">id</span>.<span style="color:#a6e22e">Posts</span> = append(<span style="color:#a6e22e">id</span>.<span style="color:#a6e22e">Posts</span>, <span style="color:#a6e22e">pd</span>)
+<pre style="color:#f8f8f2;background-color:#272822"><span style="color:#a6e22e">pd</span>.<span style="color:#a6e22e">Raw</span> = <span style="color:#a6e22e">template</span>.<span style="color:#a6e22e">HTML</span>(
+	<span style="color:#a6e22e">blackfriday</span>.<span style="color:#a6e22e">Run</span>(
+		<span style="color:#a6e22e">md</span>, <span style="color:#a6e22e">blackfriday</span>.<span style="color:#a6e22e">WithRenderer</span>(
+			<span style="color:#a6e22e">NewChromaRenderer</span>())))
+<span style="color:#a6e22e">writeTemplate</span>(
+	[]<span style="color:#66d9ef">string</span>{
+		<span style="color:#e6db74">&#34;_templates/post.gohtml&#34;</span>,
+		<span style="color:#e6db74">&#34;_templates/base.gohtml&#34;</span>,
+	}, <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Sprintf</span>(<span style="color:#e6db74">&#34;posts/%s.html&#34;</span>, <span style="color:#a6e22e">pd</span>.<span style="color:#a6e22e">Title</span>), <span style="color:#a6e22e">pd</span>)
+<span style="color:#a6e22e">id</span>.<span style="color:#a6e22e">Posts</span> = append(<span style="color:#a6e22e">id</span>.<span style="color:#a6e22e">Posts</span>, <span style="color:#a6e22e">pd</span>)
 </pre>
 <p>The function <code>writeTemplate</code> is just a convenience wrapper I made for executing templates then writing them to a file. Now that I&rsquo;m writing this I see I should probably check the error that it returns.</p>
 <pre style="color:#f8f8f2;background-color:#272822"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">writeTemplate</span>(<span style="color:#a6e22e">t</span> []<span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">o</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">d</span> <span style="color:#66d9ef">interface</span>{}) <span style="color:#66d9ef">error</span> {
