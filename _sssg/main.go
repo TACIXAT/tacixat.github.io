@@ -27,6 +27,10 @@ type PostData struct {
 	Raw   template.HTML
 }
 
+type AboutData struct {
+	Raw   template.HTML
+}
+
 // Mon Jan 2 15:04:05 -0700 MST 2006
 func (pd PostData) Datef() string {
 	return pd.Date.Format("2006/01/02 15:04")
@@ -92,7 +96,22 @@ func genPosts(id *IndexData) {
 }
 
 func genAbout() {
-	
+	md, err := ioutil.ReadFile("_pages/about.md")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	md = windowsBad(md)
+
+	ad := AboutData{}
+	ad.Raw = template.HTML(blackfriday.Run(md))
+
+	writeTemplate(
+		[]string{
+			"_templates/about.gohtml",
+			"_templates/base.gohtml",
+		}, "about.html", ad)
 }
 
 func main() {

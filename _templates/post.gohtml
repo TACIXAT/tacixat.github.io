@@ -1,9 +1,17 @@
 {{ define "css" }}
-    
+    #date {
+      font-size: 18px;
+      font-style: italic;
+    }
+
+    #title {
+      font-size: 32px;
+    }
 {{ end }}
 
 {{ define "main" }}
-  <div>Posted: {{ .Datef }}</div>
+  <div id=title>{{ .Title }}</div>
+  <div id=date>{{ .Datef }}</div>
   <div>
 {{ .Raw }}
   </div>
