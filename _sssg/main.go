@@ -85,7 +85,8 @@ func genPosts(id *IndexData) {
 			continue
 		}
 
-		pd.Raw = template.HTML(blackfriday.Run(md))
+		pd.Raw = template.HTML(blackfriday.Run(
+			md, blackfriday.WithRenderer(NewChromaRenderer())))
 		writeTemplate(
 			[]string{
 				"_templates/post.gohtml",

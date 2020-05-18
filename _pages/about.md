@@ -1,6 +1,6 @@
 # About
 
-Personal blog for your's truly. Don't take me too seriously, I sure as hell don't.
+Personal blog for yours truly. Don't take me too seriously, I sure as hell don't.
 
 ## Tech
 
