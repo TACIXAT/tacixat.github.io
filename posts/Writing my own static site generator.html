@@ -92,7 +92,7 @@
 
 <h2>Golang</h2>
 
-<p>I ended up clocking in about ~150 lines for my main file, which I thought would be the heart of the code. The main idea is loop over some markdown posts, md -&gt; html using Blackfriday, then generate the index from the posts.</p>
+<p>I ended up clocking in about ~150 lines for my main file, which I thought would be the heart of the code. The main idea is loop over some markdown posts, md -&gt; html using <a href="https://github.com/russross/blackfriday">Blackfriday</a>, then generate the index from the posts.</p>
 <pre style="color:#f8f8f2;background-color:#272822"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
 	<span style="color:#a6e22e">id</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">IndexData</span>{
 		<span style="color:#a6e22e">Posts</span>: []<span style="color:#a6e22e">PostData</span>{},
@@ -155,8 +155,10 @@
 }
 </pre>
 <p>After that we render and pass <code>PostData</code> to our templates. Then we append the post to the <code>IndexData</code> structure we passed in so we can go back and write out the index.</p>
-<pre style="color:#f8f8f2;background-color:#272822">		<span style="color:#a6e22e">pd</span>.<span style="color:#a6e22e">Raw</span> = <span style="color:#a6e22e">template</span>.<span style="color:#a6e22e">HTML</span>(<span style="color:#a6e22e">blackfriday</span>.<span style="color:#a6e22e">Run</span>(
-			<span style="color:#a6e22e">md</span>, <span style="color:#a6e22e">blackfriday</span>.<span style="color:#a6e22e">WithRenderer</span>(<span style="color:#a6e22e">NewChromaRenderer</span>())))
+<pre style="color:#f8f8f2;background-color:#272822">		<span style="color:#a6e22e">pd</span>.<span style="color:#a6e22e">Raw</span> = <span style="color:#a6e22e">template</span>.<span style="color:#a6e22e">HTML</span>(
+			<span style="color:#a6e22e">blackfriday</span>.<span style="color:#a6e22e">Run</span>(
+				<span style="color:#a6e22e">md</span>, <span style="color:#a6e22e">blackfriday</span>.<span style="color:#a6e22e">WithRenderer</span>(
+					<span style="color:#a6e22e">NewChromaRenderer</span>())))
 		<span style="color:#a6e22e">writeTemplate</span>(
 			[]<span style="color:#66d9ef">string</span>{
 				<span style="color:#e6db74">&#34;_templates/post.gohtml&#34;</span>,
@@ -180,11 +182,11 @@
 	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">it</span>.<span style="color:#a6e22e">ExecuteTemplate</span>(<span style="color:#a6e22e">f</span>, <span style="color:#e6db74">&#34;base.gohtml&#34;</span>, <span style="color:#a6e22e">d</span>)
 }
 </pre>
-<p>I skipped over the <code>NewChromaRenderer</code> above. There is a really nice library called bfchroma that adds syntax highlighting support to Blackfriday. It doesn&rsquo;t load though.</p>
+<p>I skipped over the <code>NewChromaRenderer</code> above. There is a really nice library called <a href="https://github.com/Depado/bfchroma">bfchroma</a> that adds syntax highlighting support to Blackfriday (amazing!). It doesn&rsquo;t load though.</p>
 
 <p>Blackfriday got cute with their packaging and are hosting it on <code>gopkg.in</code>. I had not really seen this before, but it seems like it knocked a lot of things out of sync. Some places are importing <code>github.com/russross/blackfriday/v2</code>. The repo tells you to <code>go get gopkg.in/russross/blackfriday.v2</code> though, and import that same URL. When installing bfchroma you can an error that it can&rsquo;t find that <code>github.com</code> URL.</p>
 
-<p>I tried forking the repo and swapping out all the URLs for the <code>gopkg.in</code> one, but something with the module wanted to store it there but import from <code>github.com</code>. It was a mess, I don&rsquo;t know if it was on my end or the packages&rsquo;. I just ended up grabbing the one file from <code>bfchroma</code> and hosting it in this repo.</p>
+<p>I tried forking the repo and swapping out all the URLs for the <code>gopkg.in</code> one, but something with the module wanted to store it there but import from <code>github.com</code>. It was a mess, I don&rsquo;t know if it was on my end or the packages&rsquo;. I just ended up grabbing the one file from <code>bfchroma</code>, doing some small modifications, and hosting it in this repo.</p>
 
 <h2>Templates</h2>
 
@@ -223,6 +225,8 @@
 <p>This took me about a day of programming with a nice break in the middle to take the dog to the dog park with the girlfriend and see the bats in Austin. I really feel setting up a standard static site generator would have taken as long. The base code is easy enough, the big time sink was styling the blog! I think that is the win with existing SSGs, having prebuilt themes. I shouldn&rsquo;t lie to myself though, I would have definitely taken as long tweaking a prebuilt theme as I did doing my own.</p>
 
 <p>I do like doing things this way. This gives me a base to build future projects off of. I have a static site generator now that I fully understand and can easily add features to. A thought that came to mind with this, it would be pretty easy to take this tech and make a technical-focused markdown-based blogging site. Now if I ever want to build that up, I have a great starting point.</p>
+
+<p>All the <a href="https://github.com/TACIXAT/tacixat.github.io">code</a> is public so feel free to take a look! The Go code is in <code>_sssg</code> (the extra <code>s</code> was for <em>simple</em>).</p>
 
   </div>
 
