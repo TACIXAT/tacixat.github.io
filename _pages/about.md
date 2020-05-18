@@ -6,7 +6,7 @@ Personal blog for yours truly. Don't take me too seriously, I sure as hell don't
 
 I'm super good at having grand ideas, implementing a proof of concept, then moving on to the next project. I do my best to see things through but there might be a pattern here. Might as well share the things I hack up.
 
-For work I'm a software engineer in the security R&D space. I've worked at SorceFire acq. Cisco, ISE, Trail of Bits, Google, and now River Loop Security. Research contracts are where I find myself most engaged, so I am very picky about the work I take. Right now I am working part time which leaves plenty of time for side projects.
+For work I'm a software engineer in the security R&D space. I've worked at SourceFire acq. Cisco, ISE, Trail of Bits, Google, and now River Loop Security. Research contracts are where I find myself most engaged, so I am very picky about the work I take. Right now I am working part time which leaves plenty of time for side projects.
 
 ## Personal
 
