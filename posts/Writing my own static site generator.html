@@ -192,7 +192,7 @@
 	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
 		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
 		<span style="color:#66d9ef">continue</span>
-}
+	}
 </pre>
 <p>The TOML reads right into the <code>PostData</code> struct. We have a post title and a date. The tags aren&rsquo;t used right now, but it should be easy enough to whip up some JS for filtering, or individual pages for each tag. The field <code>Raw</code> is where the markdown rendered to HTML goes.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">PostData</span> <span style="color:#66d9ef">struct</span> {
