@@ -4,6 +4,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TACIX.AT</title>
   <style>
+    html {
+      display: flex;
+      flex-direction: column;
+    }
+
     header {
       width: 960px;
       margin: 0 auto;
@@ -12,6 +17,7 @@
     }
 
     body {
+      flex-grow: 1;
       width: 100%;
       font-family: monospace;
       color: #EEE;
@@ -61,6 +67,10 @@
     }
 
     @media only screen and (max-width: 959px) {
+      html {
+        padding: 5px;
+      }
+
       header {
         width: 100%;
       }
