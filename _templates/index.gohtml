@@ -4,7 +4,7 @@
 
 {{ define "main" }}
   {{ range $p := .Posts }}
-    <div>{{ .Datef }}</div>
-    <div><a class=post href="/posts/{{ $p }}.html">{{ $p }}</a></div>
+    <div>{{ $p.Datef }}</div>
+    <div><a class=post href="/posts/{{ $p.Title }}.html">{{ $p.Title }}</a></div>
   {{ end }}
 {{ end }}
