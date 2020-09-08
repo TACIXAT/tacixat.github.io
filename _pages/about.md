@@ -10,10 +10,10 @@ For work I'm a software engineer in the security R&D space. I've worked at Sourc
 
 ## Personal
 
-I live in the Bay Area with my partner of 10 years and our dog. We're pretty active. I do body weight exercises, snowboard with my dad, and skate a bit. I've picked up fly fishing but haven't caught anything yet. I have a Wrangler and really enjoy driving slowly on dirt roads.
+I live in the Bay Area with my partner of 10 years and our dog. We're pretty active. I do body weight exercises, snowboard with my dad, and skate a bit. I have a Wrangler and really enjoy driving slowly on dirt roads.
 
 I follow a strict diet due to some health issues. Changing what I ate really changed my life. I hope to share a bit about that here.
 
 I also meditate. I'm interested in Daoist internal alchemy. Figure it's the best bet on getting super powers in this lifetime. Sitting is hard work though.
 
-*Updated: 5/18/2020*
+*Updated: 9/6/2020*
