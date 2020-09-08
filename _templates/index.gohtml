@@ -20,7 +20,7 @@
 
 {{ define "main" }}
   {{ range $p := .Posts }}
-    {{ if $p.Live }}
+    {{ if $p.Published }}
     <div class=entry>
       <div class=date>{{ $p.Datef }}</div>
       <div class=post><a href="/posts/{{ $p.Meta.Title }}.html">{{ $p.Meta.Title }}</a></div>

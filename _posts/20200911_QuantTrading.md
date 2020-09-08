@@ -1,5 +1,5 @@
 Date = 2020-09-11T13:37:00-04:00
-Live = false
+Published = false
 [Meta]
 Title = "Takeaways from Quantitative Trading by Earnest P. Chan"
 Description = "I read a book on quantitative finance and took some notes..."
