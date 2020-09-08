@@ -32,6 +32,7 @@ type PostData struct {
 	Tags []string
 	Date time.Time
 	Raw  template.HTML
+	Live bool
 }
 
 type AboutData struct {
