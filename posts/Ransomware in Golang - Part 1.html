@@ -190,16 +190,18 @@
 
 <h2>Restore and Verify</h2>
 
-<p>Restoration is pretty simple in an OS specific context. On Linux it would simply be <code>rm -r victim</code> and <code>cp _victim victim</code>. To reliably copy a directory recursively though, there are a lot of edge cases. Thankfully other people have already done the work on this.</p>
+<p>We&rsquo;re going to create a small utility for restoring our victim directory, and also for verifying that things have been decrypted correctly. Let&rsquo;s make a new directory <code>~/prog/rw/util</code>, then create the file <code>util.go</code> in there.</p>
 
-<p>We&rsquo;re going to use the package <code>github.com/otiai10/copy</code>. Let&rsquo;s make a new directory <code>~/prog/rw/util</code>, then create the file <code>util.go</code> in there.</p>
+<h3>Restoration</h3>
+
+<p>Restoration is pretty simple in an OS specific context. On Linux it would simply be <code>rm -r victim</code> and <code>cp _victim victim</code>. To reliably copy a directory recursively though, there are a lot of edge cases. Thankfully other people have already done the work on this. We&rsquo;re going to use the package <code>github.com/otiai10/copy</code>.</p>
 
 <p>Since <code>github.com/otiai10/copy</code> is an external package, in order to import it we will need to run <code>go get github.com/otiai10/copy</code> on the command line. That will download the package and store it so we don&rsquo;t get an error like the following when we try to run our util program.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#a6e22e">util</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">util</span>.<span style="color:#66d9ef">go</span>:<span style="color:#ae81ff">5</span>:<span style="color:#ae81ff">2</span>: <span style="color:#a6e22e">cannot</span> <span style="color:#a6e22e">find</span> <span style="color:#f92672">package</span> <span style="color:#e6db74">&#34;github.com/otiai10/copy&#34;</span> <span style="color:#a6e22e">in</span> <span style="color:#a6e22e">any</span> <span style="color:#a6e22e">of</span>:
         <span style="color:#a6e22e">c</span>:<span style="color:#960050;background-color:#1e0010">\</span><span style="color:#66d9ef">go</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">src</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">github</span>.<span style="color:#a6e22e">com</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">otiai10</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">copy</span> (<span style="color:#a6e22e">from</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">GOROOT</span>)
         <span style="color:#a6e22e">C</span>:<span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">Users</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">tacixat</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#66d9ef">go</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">src</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">github</span>.<span style="color:#a6e22e">com</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">otiai10</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">copy</span> (<span style="color:#a6e22e">from</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">GOPATH</span>)
 </pre>
-<p>We&rsquo;ll start with this in <code>util.go</code>. Give it a read through and I&rsquo;ll break it down section by section after.</p>
+<p>We&rsquo;ll start with this in <code>util.go</code>. Give it a read through and I&rsquo;ll break it down section by section after. You can also try running it with <code>go run util/util.go</code>. Try adding on the flags <code>-verify</code> and <code>-restore</code> to the end of that and seeing how it handles them.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
 
 <span style="color:#f92672">import</span> (
@@ -236,6 +238,56 @@
 	}
 }
 </pre>
+<p>We start by importing a few packages. In Golang the packages should be listed in alphabetical order. You can do this automatically with <code>go fmt util/util.go</code>, which will tidy up other things about the file as well.</p>
+
+<ul>
+<li><a href="https://golang.org/pkg/flag"><code>flag</code></a> - Used for creating command line flags.</li>
+<li><a href="https://pkg.go.dev/github.com/otiai10/copy"><code>github.com/otiai10/copy</code></a> - For copying our <code>_victim/</code> directory to <code>victim/</code>. Very straightforward package, only one function.</li>
+<li><a href="https://golang.org/pkg/log"><code>log</code></a> - We&rsquo;ll use this one for printing instead of <code>fmt</code> and I&rsquo;ll explain why below.</li>
+<li><a href="https://golang.org/pkg/os"><code>os</code></a> - Used to delete our current <code>victim/</code> directory, recursively.</li>
+</ul>
+
+<p>In our <code>main()</code> function we start by declaring two flags. The <code>:=</code> operator in Go is a short hand for declaring and defining a variable. This could also be done in two steps, like <code>var restore *Bool</code> and <code>restore = flag.Bool(...)</code> (the <code>*</code> here is saying it is a pointer type). The shorthand is nicer. Remember, any assignment after declaration would just use <code>=</code>.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">restore</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(
+		<span style="color:#e6db74">&#34;restore&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;restore victim directory from _victim&#34;</span>)
+	<span style="color:#a6e22e">verify</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(
+		<span style="color:#e6db74">&#34;verify&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;verify files in victim directory&#34;</span>)
+</pre>
+<p>These are pointers to boolans. Pointers are an address in memory that holds the value (in this case, boolean value). In order to access the value, we dereference it with <code>*</code> when accessing the variable.</p>
+
+<p>This block is checking if either both <code>restore</code> and <code>verify</code> are false or both <code>restore</code> and <code>verify</code> are true. The <code>&amp;&amp;</code> (and) operator has a higher precendence than <code>||</code> (or). Think order of operations with <code>*</code> and <code>+</code>. If we either have both true or neither, we&rsquo;re going to call <code>log.Fatal(...)</code> which prints the message and exits the program.</p>
+
+<p>The <code>log</code> package has a very similar format to <code>fmt</code>. The primary different is it prints to <code>stderr</code> instead of <code>stdout</code>, so it useful for program-related messages, rather than those meant for the end user. It also has nice utility functions like <code>Fatal</code> so we don&rsquo;t need to call both <code>fmt.Println(...)</code> and <code>sys.Exit(1)</code>.</p>
+
+<p><em>If you need a referesher on boolean logic, check out video <a href="https://cybering.cc/#02">02.04</a>.</em></p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#66d9ef">if</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> <span style="color:#f92672">||</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Requires one of -verify or -restore.&#34;</span>)
+	}
+</pre>
+<p>If all goes well, and we have run the program with either <code>-verify</code> or <code>-restore</code> then we&rsquo;ll move onto our if statement. Looking at the second part first, we just bail if we call <code>-verify</code>. We&rsquo;ll implement that in a minute.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	} <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Verify not implemented yet!&#34;</span>)
+	}
+</pre>
+<p>In our restore block we have two actions. The first is calling <code>os.RemoveAll()</code> on our <code>victim/</code> directory. This will recursively delete (meaning, delete the folder, and all of its contents) the current <code>victim/</code> dir. This is great when we have half of our ransomware working and we can encrypt the files but not recover them!</p>
+
+<p>The pattern of <code>err = ...</code> and <code>if err != nil { ... }</code> is the standard pattern in Go for handling errors. This is to replace C-style errors where some functions return 0 for OK, and some return NULL (also 0) in error cases. Instead we just get an error, and the if the error is defined, we can handle it. In this case we handle it by printing it out and exiting the program. This is fine since we&rsquo;re not expecting to hit these errors very much.</p>
+
+<p>The next block uses the <code>github.com/otiai10/copy</code> package to copy <code>_victim/</code> to <code>victim/</code>. Easy enough. Only thing to note, is see how we declare and define the first <code>err</code> with <code>:=</code> and the second we are just reassigning the existing <code>err</code> variable with <code>=</code>.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">		<span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">RemoveAll</span>(<span style="color:#e6db74">&#34;victim&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+
+		<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">copy</span>.<span style="color:#a6e22e">Copy</span>(<span style="color:#e6db74">&#34;_victim&#34;</span>, <span style="color:#e6db74">&#34;victim&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+</pre>
+<h3>Verification</h3>
+
+<p>Words words words.</p>
+
   </div>
 
   </div>
