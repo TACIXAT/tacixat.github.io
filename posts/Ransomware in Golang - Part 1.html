@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Environment and victim directory setup...">
+  <meta property="og:title" content="Ransomware in Golang - Part 1">
+  <meta property="og:description" content="Environment and victim directory setup...">
+  <meta property="og:site_name" content="TACIX.AT">
+  <meta name="twitter:site" content="@cyberingcc">
+  <title>TACIX.AT - Ransomware in Golang - Part 1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inconsolata&family=Major+Mono+Display&display=swap" rel="stylesheet"> 
+  <style>
+    html {
+      height: 100%;
+    }
+    
+    header {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;      
+      width: 100%;
+      color: #EEE;
+      background-color: #333;
+      margin: 0;
+      height: 100%;
+      font-size: 28px;
+      font-family: 'Inconsolata', monospace;
+    }
+
+    footer {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+    }
+
+    a {
+      color: #EEE;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    a:visited {
+      color: #DDD;
+    }
+
+    #title {
+      flex-grow: 1;
+      font-size: 32px;
+      font-weight: 300;
+      padding: 10px 0px;
+    }
+
+    #about {
+      font-size: 24px;
+      margin-top: 14px;
+    }
+
+    #main {
+      flex-grow: 1;
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      padding: 30px 0px;
+    }
+
+    @media only screen and (max-width: 959px) {
+      html {
+        padding: 5px;
+      }
+
+      header {
+        width: 100%;
+      }
+
+      #main {
+        width: 100%;
+      }
+
+      footer {
+        width: 100%;
+      }
+    }
+
+    
+    #date {
+      font-size: 18px;
+      font-style: italic;
+    }
+
+    #title {
+      font-size: 32px;
+    }
+
+    h1, h2, h3, h4, h5 {
+      color: #a8caee;
+      font-family: 'Major Mono Display', monospace;
+    }
+
+    pre {
+      font-family: 'Inconsolata', monospace !important;
+    }
+
+    p a {
+      text-decoration: underline;
+      line-height: 32px;
+    }
+
+    code {
+      color: #fbb5b5;
+      background-color: #3e3e3e;
+      border-radius: 4px;
+    }
+
+    pre {
+      overflow: auto;
+    }
+
+    @media only screen and (max-width: 959px) {
+      body {
+        font-size: 18px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <header>
+    <span id=title><a href=/>TACIX.AT</a></span>
+    <span id=about><a href=/about>About</a></span>
+  </header>
+
+  <div id=main>
+  
+  <div id=title>Ransomware in Golang - Part 1</div>
+  <div id=date>2020/11/06 13:37</div>
+  <div>
+<h2>Setup</h2>
+
+<p>To get started you’ll need to download Go and follow the install instructions for your operating system. Then you’ll create a directory for this project, I’ll be working out of <code>~/prog/rw/</code> where <code>~</code> is my home directory on whatever OS I’m working on.</p>
+
+<h2>Victim Directory</h2>
+
+<p>Since we will be repeatedly running and debugging our encryptor, we will need to set up a victim directory so we’re not encrypting our own data, especially when we do not have a decryptor! This directory should be replaceable so we can reinitialize it easily. We’ll have a master directory and our directory under test which is an exact clone of it. This way, restoring should be as simple as deleting the directory under test and replacing it with master.</p>
+
+<p>Let’s make <code>_victim/</code> and seed it with some data. We’ll have a few requirements. We want to have a handful of files that we can check for validity. When you are decrypting there are small things you can mess up, so we want to make sure our files match their originals exactly. Having multiple file types will also help us when we start filtering by extension. A single flat folder will not be realistic, so we will create a directory structure in order to simulate a real file system traversal.</p>
+
+  </div>
+
+  </div>
+
+  <footer>
+  </footer>
+</body>
+</html>
