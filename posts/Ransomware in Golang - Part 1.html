@@ -198,7 +198,9 @@
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#a6e22e">util</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">util</span>.<span style="color:#66d9ef">go</span>:<span style="color:#ae81ff">5</span>:<span style="color:#ae81ff">2</span>: <span style="color:#a6e22e">cannot</span> <span style="color:#a6e22e">find</span> <span style="color:#f92672">package</span> <span style="color:#e6db74">&#34;github.com/otiai10/copy&#34;</span> <span style="color:#a6e22e">in</span> <span style="color:#a6e22e">any</span> <span style="color:#a6e22e">of</span>:
         <span style="color:#a6e22e">c</span>:<span style="color:#960050;background-color:#1e0010">\</span><span style="color:#66d9ef">go</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">src</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">github</span>.<span style="color:#a6e22e">com</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">otiai10</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">copy</span> (<span style="color:#a6e22e">from</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">GOROOT</span>)
         <span style="color:#a6e22e">C</span>:<span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">Users</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">tacixat</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#66d9ef">go</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">src</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">github</span>.<span style="color:#a6e22e">com</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">otiai10</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">copy</span> (<span style="color:#a6e22e">from</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">GOPATH</span>)
-</pre><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+</pre>
+<p>We&rsquo;ll start with this in <code>util.go</code>. Give it a read through and I&rsquo;ll break it down section by section after.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
 
 <span style="color:#f92672">import</span> (
 	<span style="color:#e6db74">&#34;flag&#34;</span>
@@ -208,25 +210,28 @@
 )
 
 <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
-<span style="color:#f92672">+</span>	<span style="color:#a6e22e">restore</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(<span style="color:#e6db74">&#34;r&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;restore victim directory from _victim&#34;</span>)
+	<span style="color:#a6e22e">restore</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(
+		<span style="color:#e6db74">&#34;restore&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;restore victim directory from _victim&#34;</span>)
 	<span style="color:#a6e22e">verify</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(
-		<span style="color:#e6db74">&#34;v&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;verify files in victim directory from _victim&#34;</span>)
+		<span style="color:#e6db74">&#34;verify&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;verify files in victim directory&#34;</span>)
+
+	<span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Parse</span>()
 
 	<span style="color:#66d9ef">if</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> <span style="color:#f92672">||</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> {
-		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Requires one of -v or -r.&#34;</span>)
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Requires one of -verify or -restore.&#34;</span>)
 	}
 
-	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">restore</span> {
+	<span style="color:#66d9ef">if</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> {
 		<span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">RemoveAll</span>(<span style="color:#e6db74">&#34;victim&#34;</span>)
 		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
 			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 		}
 
-		<span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">copy</span>.<span style="color:#a6e22e">Copy</span>(<span style="color:#e6db74">&#34;_victim&#34;</span>, <span style="color:#e6db74">&#34;victim&#34;</span>)
+		<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">copy</span>.<span style="color:#a6e22e">Copy</span>(<span style="color:#e6db74">&#34;_victim&#34;</span>, <span style="color:#e6db74">&#34;victim&#34;</span>)
 		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
 			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 		}
-	} <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">verify</span> {
+	} <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> {
 		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Verify not implemented yet!&#34;</span>)
 	}
 }

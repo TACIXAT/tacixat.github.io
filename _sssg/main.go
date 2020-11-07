@@ -103,7 +103,7 @@ func genPosts(id *IndexData) {
 				"_templates/post.gohtml",
 				"_templates/base.gohtml",
 			}, fmt.Sprintf("posts/%s.html", pd.Meta.Title), pd)
-		id.Posts = append(id.Posts, pd)
+		id.Posts = append([]PostData{pd}, id.Posts...)
 	}
 }
 
