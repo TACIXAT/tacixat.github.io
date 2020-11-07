@@ -143,11 +143,15 @@
   <div id=main>
   
   <div id=title>Ransomware in Golang - Part 1</div>
-  <div id=date>2020/11/06 13:37</div>
+  <div id=date>2020/11/09 13:37</div>
   <div>
 <h2>Setup</h2>
 
-<p>To get started you’ll need to download Go and follow the install instructions for your operating system. Then you’ll create a directory for this project, I’ll be working out of <code>~/prog/rw/</code> where <code>~</code> is my home directory on whatever OS I’m working on.</p>
+<p>To get started you’ll need to <a href="https://golang.org/dl/">download Go</a> and follow the <a href="https://golang.org/doc/install">install instructions</a> for your operating system. Then you’ll create a directory for this project, I’ll be working out of <code>~/prog/rw/</code> where <code>~</code> is my home directory on whatever OS I’m working on.</p>
+
+<p>Golang is cross platform, and we&rsquo;re not doing anything platform specific, so you&rsquo;re free to work wherever you&rsquo;d like. However, if you&rsquo;re looking to learn some basic skills, now would be a great time to start working with virtual machines!</p>
+
+<p>I&rsquo;ve made some YouTube videos on how to get started with VirtualBox, you can get the links at <a href="https://cybering.cc/#00">cybering.cc</a>. It&rsquo;s super easy, if you can click through two installers, you should have no problem. The videos help through a couple gotchas. So if you&rsquo;re looking to learn about VMs or Linux, both of which are great job skills, give it a shot! Your malware will then be contained in a VM, as all malware should be.</p>
 
 <h2>Victim Directory</h2>
 
@@ -155,6 +159,78 @@
 
 <p>Let’s make <code>_victim/</code> and seed it with some data. We’ll have a few requirements. We want to have a handful of files that we can check for validity. When you are decrypting there are small things you can mess up, so we want to make sure our files match their originals exactly. Having multiple file types will also help us when we start filtering by extension. A single flat folder will not be realistic, so we will create a directory structure in order to simulate a real file system traversal.</p>
 
+<p>Yours doesn&rsquo;t have to match mine exactly, but here is a good template structure.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">_victim/
+	simple.txt
+	pics/
+		raylan.jpg
+		hello.jpg
+	docs/
+		Resume.pdf
+	prog/
+		main.go
+		main.exe
+</pre>
+<p>The file <code>simple.txt</code> is just a text file that has <code>Hello world!</code> in it. In <code>pics/</code> I have a picture of my dog and another file I found on the internet. The <code>docs/</code> folder contains my resume which I had sitting around.</p>
+
+<p>For the dummy <code>prog/</code> folder, we can use this to test our Golang installation. My <code>main.go</code> file has the following contents.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;fmt&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Greetings from Go!&#34;</span>)
+}
+</pre>
+<p><strong>Quick Note</strong> We&rsquo;ll be working a lot from the command line. If you&rsquo;re on Linux the provided terminal is great. On Windows, you <em>can</em> use command prompt, but I generally work from <a href="https://conemu.github.io/">ConEmu</a>. If you want to learn some command line basics, I have some videos <a href="https://cybering.cc/#01">here</a>.</p>
+
+<p>Normally, as I&rsquo;m working I just run my Go files with something like <code>go run main.go</code> on the command line. To produce an executable though, we can use <code>go build main.go</code>. On Windows this will produce <code>main.exe</code>, if you are working on Linux (probably OSX too) you will get an exectuable called <code>main</code>, either is fine.</p>
+
+<h2>Restore and Verify</h2>
+
+<p>Restoration is pretty simple in an OS specific context. On Linux it would simply be <code>rm -r victim</code> and <code>cp _victim victim</code>. To reliably copy a directory recursively though, there are a lot of edge cases. Thankfully other people have already done the work on this.</p>
+
+<p>We&rsquo;re going to use the package <code>github.com/otiai10/copy</code>. Let&rsquo;s make a new directory <code>~/prog/rw/util</code>, then create the file <code>util.go</code> in there.</p>
+
+<p>Since <code>github.com/otiai10/copy</code> is an external package, in order to import it we will need to run <code>go get github.com/otiai10/copy</code> on the command line. That will download the package and store it so we don&rsquo;t get an error like the following when we try to run our util program.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#a6e22e">util</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">util</span>.<span style="color:#66d9ef">go</span>:<span style="color:#ae81ff">5</span>:<span style="color:#ae81ff">2</span>: <span style="color:#a6e22e">cannot</span> <span style="color:#a6e22e">find</span> <span style="color:#f92672">package</span> <span style="color:#e6db74">&#34;github.com/otiai10/copy&#34;</span> <span style="color:#a6e22e">in</span> <span style="color:#a6e22e">any</span> <span style="color:#a6e22e">of</span>:
+        <span style="color:#a6e22e">c</span>:<span style="color:#960050;background-color:#1e0010">\</span><span style="color:#66d9ef">go</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">src</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">github</span>.<span style="color:#a6e22e">com</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">otiai10</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">copy</span> (<span style="color:#a6e22e">from</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">GOROOT</span>)
+        <span style="color:#a6e22e">C</span>:<span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">Users</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">tacixat</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#66d9ef">go</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">src</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">github</span>.<span style="color:#a6e22e">com</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">otiai10</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">copy</span> (<span style="color:#a6e22e">from</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">GOPATH</span>)
+</pre><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;flag&#34;</span>
+	<span style="color:#e6db74">&#34;github.com/otiai10/copy&#34;</span>
+	<span style="color:#e6db74">&#34;log&#34;</span>
+	<span style="color:#e6db74">&#34;os&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+<span style="color:#f92672">+</span>	<span style="color:#a6e22e">restore</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(<span style="color:#e6db74">&#34;r&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;restore victim directory from _victim&#34;</span>)
+	<span style="color:#a6e22e">verify</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(
+		<span style="color:#e6db74">&#34;v&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;verify files in victim directory from _victim&#34;</span>)
+
+	<span style="color:#66d9ef">if</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> <span style="color:#f92672">||</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Requires one of -v or -r.&#34;</span>)
+	}
+
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">restore</span> {
+		<span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">RemoveAll</span>(<span style="color:#e6db74">&#34;victim&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+
+		<span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">copy</span>.<span style="color:#a6e22e">Copy</span>(<span style="color:#e6db74">&#34;_victim&#34;</span>, <span style="color:#e6db74">&#34;victim&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+	} <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">verify</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Verify not implemented yet!&#34;</span>)
+	}
+}
+</pre>
   </div>
 
   </div>
