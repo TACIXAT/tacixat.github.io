@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Go ransomware design document...">
+  <meta property="og:title" content="Writing Ransomware in Golang #0">
+  <meta property="og:description" content="Go ransomware design document...">
+  <meta property="og:site_name" content="TACIX.AT">
+  <meta name="twitter:site" content="@cyberingcc">
+  <title>TACIX.AT - Writing Ransomware in Golang #0</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inconsolata&family=Major+Mono+Display&display=swap" rel="stylesheet"> 
+  <style>
+    html {
+      height: 100%;
+    }
+    
+    header {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;      
+      width: 100%;
+      color: #EEE;
+      background-color: #333;
+      margin: 0;
+      height: 100%;
+      font-size: 28px;
+      font-family: 'Inconsolata', monospace;
+    }
+
+    footer {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+    }
+
+    a {
+      color: #EEE;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    a:visited {
+      color: #DDD;
+    }
+
+    #title {
+      flex-grow: 1;
+      font-size: 32px;
+      font-weight: 300;
+      padding: 10px 0px;
+    }
+
+    #about {
+      font-size: 24px;
+      margin-top: 14px;
+    }
+
+    #main {
+      flex-grow: 1;
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      padding: 30px 0px;
+    }
+
+    @media only screen and (max-width: 959px) {
+      html {
+        padding: 5px;
+      }
+
+      header {
+        width: 100%;
+      }
+
+      #main {
+        width: 100%;
+      }
+
+      footer {
+        width: 100%;
+      }
+    }
+
+    
+    #date {
+      font-size: 18px;
+      font-style: italic;
+    }
+
+    #title {
+      font-size: 32px;
+    }
+
+    h1, h2, h3, h4, h5 {
+      color: #a8caee;
+      font-family: 'Major Mono Display', monospace;
+    }
+
+    pre {
+      font-family: 'Inconsolata', monospace !important;
+    }
+
+    p a {
+      text-decoration: underline;
+      line-height: 32px;
+    }
+
+    code {
+      color: #fbb5b5;
+      background-color: #3e3e3e;
+      border-radius: 4px;
+    }
+
+    pre {
+      overflow: auto;
+    }
+
+    @media only screen and (max-width: 959px) {
+      body {
+        font-size: 18px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <header>
+    <span id=title><a href=/>TACIX.AT</a></span>
+    <span id=about><a href=/about>About</a></span>
+  </header>
+
+  <div id=main>
+  
+  <div id=title>Writing Ransomware in Golang #0</div>
+  <div id=date>2020/11/06 13:37</div>
+  <div>
+<h2>Summary</h2>
+
+<p>We’re going to build some ransomware. This document covers the high level design and a few details to get us started. We’ll be using an asymmetric + symmetric encryption scheme for locking files. We’ll also build a server for handling decryption. All of this will be written in Go, so it will be cross platform. Our malware will show off Go’s great parallelization and networking capabilities. From there we’ll get into the technical details and start looking at anti-analysis tricks and signature writing. I’ll take you through everything step by step.</p>
+
+<h2>Design</h2>
+
+<h3>Encryptor</h3>
+
+<p>The encryptor is the malware sample that gets dropped on the victim’s computer. It will use a common asymmetric + symmetric encryption scheme for encrypting files. It will walk directories, visiting each file. It will selectively target certain files based on mimetype, extension, or size.
+Encryption Scheme</p>
+
+<p>The server will have an asymmetric keypair (e.g. RSA). The server private key will be kept private on the server. The server public key will be embedded in the encryptor client. When the client runs it will generate a client keypair and encrypt the private key with the server’s public key. For each file, it will generate a random symmetric key (e.g. AES). That file key will be used to encrypt the file contents, then that key will be encrypted with the client’s public key and stored. We will also store the IV and number of padding bytes for each file.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">EncryptionInfo</span> <span style="color:#66d9ef">struct</span> {
+	<span style="color:#a6e22e">Path</span>    <span style="color:#66d9ef">string</span>
+	<span style="color:#a6e22e">Padding</span> <span style="color:#66d9ef">uint8</span>
+	<span style="color:#a6e22e">Key</span>     []<span style="color:#66d9ef">byte</span>
+	<span style="color:#a6e22e">Iv</span>      []<span style="color:#66d9ef">byte</span>
+} 
+</pre>
+<p>This allows the server to unlock a machine by decrypting the single client private key. That client key and be used to decrypt each file key, and each file key, in turn, can be used to decrypt its respective file.</p>
+
+<h3>File Walking</h3>
+
+<p>This will be incredibly simple. The Go package path/filepath includes a method Walk. We’ll implement the visitor function to handle each file. This is where we can add filtering to not target files that are too large or an unknown file type. For detecting file types we will either use mimetype or http.DetectContentType.
+Server</p>
+
+<p>The server will be a standard HTTP server in Golang. These are super easy to write. We’ll look at HTML templating for the front-end portion of the site. This will have a few support methods for the client.</p>
+
+<p>While the client won’t always have a network connection, when it does we will upload the encrypted key to the server to save the user from having to. For this we’ll have some endpoint like /storeKey. The front-end will need an endpoint to trigger decryption, something like /decrypt, where it can post the user’s key file (or the simple code in place of the file) and get back the decryptor.</p>
+
+<h2>Milestones</h2>
+
+<h3>Environment</h3>
+
+<p>This is where we will get set up. Right now I think it will just be installing Go, which is incredibly straight forward. You will also learn about the project layout and any other information that will be helpful pre-code.</p>
+
+<h3>Victim directory setup</h3>
+
+<p>I’ll be working on the computer I use daily as I’m sure many of you will too. Since we do not want to be encrypting our disks before we have written a decryptor, we’ll write a program to set up a victim directory. If the directory currently exists it will remove it, then it will copy in a directory structure we have established elsewhere on disk. We’ll be running our encryptor repeatedly while debugging it, this will allow an easy set up and tear down of the test directory.</p>
+
+<h3>Key generator</h3>
+
+<p>Following the <a href="https://medium.com/@tarcisioma/ransomware-encryption-techniques-696531d07bb9">standard ransomware encryption scheme</a>, we’ll need a master key pair for the server to use. We’ll dive more into encryption later, but the short of it is we will be using AES (symmetric) to encrypt the files, we’ll encrypt those keys with an asymmetric client keypair. The private key of the client keypair will be encrypted by the server keypair’s public key. In this milestone we will write a program that generates the server keypair, saves it to disk, and prints out the public key in a code-friendly format for our encryptor client.</p>
+
+<h3>Encryptor</h3>
+
+<p>We finally get to write our ransomware client! Here we’ll start with building blocks of the client, such as asymmetric and symmetric cryptography and walking a directory structure. Then we will combine these pieces into a simple but functional prototype that will get refined throughout the rest of the series.</p>
+
+<h3>Server and key decryption</h3>
+
+<p>The encryptor needs a server that takes payment (ours won’t, see: Not Covered) and returns a decrypted client key. Here we’ll learn about writing web servers in Go and HTML templating. Rather than running a separate application like Apache, we can get a webserver up and running with just Go code. We will then expand on this for better usability. For example, most users will not have the technical skills to find and upload the key file, so our encryptor client should do it for them when it has network connectivity.</p>
+
+<h3>File decryption</h3>
+
+<p>Since you have the encryptor written, this should be fairly straight forward. We just need to flip the encryption methods to be decryption methods using the same directory walking. Once this is done you’ll have an end-to-end functional prototype. Another usability improvement will be to patch the decrypted key into a pre-built decryptor. This way the user does not need to manage two separate files.</p>
+
+<h3>Anti-analysis</h3>
+
+<p>A lot of anti-analysis techniques are OS specific. Since we are building cross-platform malware there is a limit to what can be implemented. What is possible is process enumeration. Malware tends to check for known analysis programs (debuggers, network capturing tools, etc.) and can either decide to kill them, not run, or do something else entirely. We’ll explore a few of these options.</p>
+
+<p>Another anti-analysis option we have in Go is to do timing checks. If the process is being stepped through in a debugger, the execution will be much slower than it normally would. We can capture a start time then an end time at some other point and check that the difference is within some threshold of our normal measurement.</p>
+
+<h3>Parsing debug information</h3>
+
+<p>Next we will take an analysis point of view and see how much information we can recover form our Go binary. We will explore the debug information and the executable file format (either ELF or PE) by reimplementing the work done in this awesome blog post. We’ll also explore ways to ruin these helpful debug hints.</p>
+
+<h3>Signature coverage</h3>
+
+<p>In this milestone we will take a defensive posture by writing ClamAV and YARA signatures for our ransomware. We will start by looking at hash based signatures and see why they suck. Next we’ll move onto real signature writing strategies, getting byte based coverage.</p>
+
+<h2>Not Covered (yet)</h2>
+
+<h3>Accepting payments</h3>
+
+<p>Payments aren’t covered for 2 reasons. The first being I don’t want to provide some ready-to-go malware package for people to ruin their lives with. The other is that it is actually a pretty large topic that I’ll cover in the future when we set up a darknet e-commerce shop.</p>
+
+<h3>OS specific techniques</h3>
+
+<p>A lot of anti-analysis techniques are OS specific. We won’t be covering those here. We’ll work on some OS specific implants at a way later date. Right now we’re going to skip manually loading our libraries and injecting into other processes. This allows our malware to be cross platform, which is great since 2020 is the year of the Linux desktop.</p>
+
+<h3>Opsec</h3>
+
+<p>Opsec is antithetical to operational efficiency. We’d spend much more time on protecting our anonymity than writing this ransomware. We don’t need to spend $50 dollars on a burner, worry about buying our hosting services with untraceable Bitcoin, or figure out how to bootstrap an email account over Tor so you can purchase a VPN. I’ve written about some orthogonal topics it in the past and it’s not easy.</p>
+
+<h3>Infection</h3>
+
+<p>My dad got infected with Sigma ransomware from a response to his Craigslist casual encounters post (jk, it was a job ad). Word documents with macros are a common infection vector. In the same spirit of not providing a fully weaponized system, that will not be covered in this series.</p>
+
+<h2>Conclusion</h2>
+
+<p>This should be a really fun series. I’ve had fun prototyping it and you’ll have a blast and learn a lot running through it. I also have a ton of great topics planned once we’re done. If you haven’t already, sign up for a paid subscription so you can get the series!</p>
+
+  </div>
+
+  </div>
+
+  <footer>
+  </footer>
+</body>
+</html>
