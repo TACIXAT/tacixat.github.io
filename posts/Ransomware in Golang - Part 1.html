@@ -145,6 +145,8 @@
   <div id=title>Ransomware in Golang - Part 1</div>
   <div id=date>2020/11/09 13:37</div>
   <div>
+<p>In case you missed it, check out <a href="https://tacix.at/posts/Ransomware%20in%20Golang%20-%20Part%200.html">Part 0</a> which will server as our design doc and outline while we&rsquo;re building this.</p>
+
 <h2>Setup</h2>
 
 <p>To get started you’ll need to <a href="https://golang.org/dl/">download Go</a> and follow the <a href="https://golang.org/doc/install">install instructions</a> for your operating system. Then you’ll create a directory for this project, I’ll be working out of <code>~/prog/rw/</code> where <code>~</code> is my home directory on whatever OS I’m working on.</p>
@@ -184,7 +186,7 @@
 	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Greetings from Go!&#34;</span>)
 }
 </pre>
-<p><strong>Quick Note</strong> We&rsquo;ll be working a lot from the command line. If you&rsquo;re on Linux the provided terminal is great. On Windows, you <em>can</em> use command prompt, but I generally work from <a href="https://conemu.github.io/">ConEmu</a>. If you want to learn some command line basics, I have some videos <a href="https://cybering.cc/#01">here</a>.</p>
+<p><em>We&rsquo;ll be working a lot from the command line. If you&rsquo;re on Linux the provided terminal is great. On Windows, you could use command prompt, but I generally work from <a href="https://conemu.github.io/">ConEmu</a>. If you want to learn some command line basics, I have some videos <a href="https://cybering.cc/#01">here</a>.</em></p>
 
 <p>Normally, as I&rsquo;m working I just run my Go files with something like <code>go run main.go</code> on the command line. To produce an executable though, we can use <code>go build main.go</code>. On Windows this will produce <code>main.exe</code>, if you are working on Linux (probably OSX too) you will get an exectuable called <code>main</code>, either is fine.</p>
 
@@ -343,7 +345,10 @@
 
 <p>Finally we get to walking a directory. This is also super easy because someone has already done the hard work. We don&rsquo;t have to screw around with handling file system edge cases or writing a tree traversal. The <code>filepath</code> package has a <a href="https://golang.org/pkg/path/filepath/#Walk"><code>Walk()</code></a> function. You provide it with a starting directory and a function that you define. The function gets called on each file or directory.</p>
 
-<p>If you check the docs you&rsquo;ll see that the function <code>Walk()</code> takes as its second argument is of the type <code>WalkFunc</code>. That definition is just below. So you need to pass in a function that matches the <code>WalkFunc</code> prototype, <code>type WalkFunc func(path string, info os.FileInfo, err error) error</code>. In our case, this is <code>onVisit()</code>. In the docs you can check out the definition of the <code>os.FileInfo</code> interface, but the important part is that it has an <code>IsDir()</code> function that returns true when the visitee is a directory. We can ignore those and return. On files we&rsquo;ll print them out.</p>
+<p>If you check the docs you&rsquo;ll see that the function <code>Walk()</code> takes as its second argument is of the type <code>WalkFunc</code>. That definition is just below. So you need to pass in a function that matches the <code>WalkFunc</code> prototype.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">WalkFunc</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">path</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">info</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">FileInfo</span>, <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>) <span style="color:#66d9ef">error</span>
+</pre>
+<p>In our case, this is <code>onVisit()</code>. In the docs you can check out the definition of the <code>os.FileInfo</code> interface, but the important part is that it has an <code>IsDir()</code> function that returns true when the visitee is a directory. We can ignore those and return. On files we&rsquo;ll print them out.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// scratch/walk.go
 </span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
 
