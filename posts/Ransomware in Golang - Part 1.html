@@ -145,7 +145,7 @@
   <div id=title>Ransomware in Golang - Part 1</div>
   <div id=date>2020/11/09 13:37</div>
   <div>
-<p>In case you missed it, check out <a href="https://tacix.at/posts/Ransomware%20in%20Golang%20-%20Part%200.html">Part 0</a> which will server as our design doc and outline while we&rsquo;re building this.</p>
+<p>In case you missed it, check out <a href="https://tacix.at/posts/Ransomware%20in%20Golang%20-%20Part%200.html">Part 0</a> which will serve as our design doc and outline while we&rsquo;re building this.</p>
 
 <h2>Setup</h2>
 
@@ -153,13 +153,13 @@
 
 <p>Golang is cross platform, and we&rsquo;re not doing anything platform specific, so you&rsquo;re free to work wherever you&rsquo;d like. However, if you&rsquo;re looking to learn some basic skills, now would be a great time to start working with virtual machines!</p>
 
-<p>I&rsquo;ve made some YouTube videos on how to get started with VirtualBox, you can get the links at <a href="https://cybering.cc/#00">cybering.cc</a>. It&rsquo;s super easy, if you can click through two installers, you should have no problem. The videos help through a couple gotchas. So if you&rsquo;re looking to learn about VMs or Linux, both of which are great job skills, give it a shot! Your malware will then be contained in a VM, as all malware should be.</p>
+<p>I&rsquo;ve made some YouTube videos on how to get started with VirtualBox, you can get the links at <a href="https://cybering.cc/#00">cybering.cc</a>. It&rsquo;s super easy, if you can click through two installers, you should have no problem. The videos help through a couple gotchas. So if you&rsquo;re looking to learn about VMs or Linux, both of which are great skills for jobbos, give it a shot! Your malware will then be contained in a VM, as all malware should be.</p>
 
 <h2>Victim Directory</h2>
 
-<p>Since we will be repeatedly running and debugging our encryptor, we will need to set up a victim directory so we’re not encrypting our own data, especially when we do not have a decryptor! This directory should be replaceable so we can reinitialize it easily. We’ll have a master directory and our directory under test which is an exact clone of it. This way, restoring should be as simple as deleting the directory under test and replacing it with master.</p>
+<p>Since we will be repeatedly running and debugging our encryptor, we will need to set up a victim directory so we’re not encrypting our own data, especially when we do not have a decryptor! This directory should be replaceable so we can reinitialize it with ease. We’ll have a master directory and a clone of it to be our directory under test. This way, restoring should be as simple as deleting the directory under test and replacing it with master.</p>
 
-<p>Let’s make <code>_victim/</code> and seed it with some data. We’ll have a few requirements. We want to have a handful of files that we can check for validity. When you are decrypting there are small things you can mess up, so we want to make sure our files match their originals exactly. Having multiple file types will also help us when we start filtering by extension. A single flat folder will not be realistic, so we will create a directory structure in order to simulate a real file system traversal.</p>
+<p>Let’s make <code>_victim/</code> and seed it with some data. We have a few requirements. We want to have a handful of files that we can check for validity. When you are decrypting there are small things you can mess up, so we want to make sure our files match their originals exactly. Having multiple file types will also help us when we start filtering by extension. A single flat folder will not be realistic, so we will create a directory structure in order to simulate a real file system traversal.</p>
 
 <p>Yours doesn&rsquo;t have to match mine exactly, but here is a good template structure.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">_victim/
@@ -196,7 +196,7 @@
 
 <h3>Restoration</h3>
 
-<p>Restoration is pretty simple in an OS specific context. On Linux it would simply be <code>rm -r victim</code> and <code>cp _victim victim</code>. To reliably copy a directory recursively though, there are a lot of edge cases. Thankfully other people have already done the work on this. We&rsquo;re going to use the package <code>github.com/otiai10/copy</code>.</p>
+<p>Restoration is pretty simple in an OS specific context. On Linux it would simply be <code>rm -r victim</code> and <code>cp -r _victim victim</code>. To reliably copy a directory recursively though, there are a lot of edge cases. Thankfully other people have already done the work on this. We&rsquo;re going to use the package <code>github.com/otiai10/copy</code>.</p>
 
 <p>Since <code>github.com/otiai10/copy</code> is an external package, in order to import it we will need to run <code>go get github.com/otiai10/copy</code> on the command line. That will download the package and store it so we don&rsquo;t get an error like the following when we try to run our util program.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#a6e22e">util</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">util</span>.<span style="color:#66d9ef">go</span>:<span style="color:#ae81ff">5</span>:<span style="color:#ae81ff">2</span>: <span style="color:#a6e22e">cannot</span> <span style="color:#a6e22e">find</span> <span style="color:#f92672">package</span> <span style="color:#e6db74">&#34;github.com/otiai10/copy&#34;</span> <span style="color:#a6e22e">in</span> <span style="color:#a6e22e">any</span> <span style="color:#a6e22e">of</span>:
@@ -245,35 +245,35 @@
 <ul>
 <li><a href="https://golang.org/pkg/flag"><code>flag</code></a> - Used for creating command line flags.</li>
 <li><a href="https://pkg.go.dev/github.com/otiai10/copy"><code>github.com/otiai10/copy</code></a> - For copying our <code>_victim/</code> directory to <code>victim/</code>. Very straightforward package, only one function.</li>
-<li><a href="https://golang.org/pkg/log"><code>log</code></a> - We&rsquo;ll use this one for printing instead of <code>fmt</code> and I&rsquo;ll explain why below.</li>
+<li><a href="https://golang.org/pkg/log"><code>log</code></a> - We&rsquo;ll use this one for printing instead of <code>fmt</code> and I&rsquo;ll explain the differences below.</li>
 <li><a href="https://golang.org/pkg/os"><code>os</code></a> - Used to delete our current <code>victim/</code> directory, recursively.</li>
 </ul>
 
-<p>In our <code>main()</code> function we start by declaring two flags. The <code>:=</code> operator in Go is a short hand for declaring and defining a variable. This could also be done in two steps, like <code>var restore *Bool</code> and <code>restore = flag.Bool(...)</code> (the <code>*</code> here is saying it is a pointer type). The shorthand is nicer. Remember, any assignment after declaration would just use <code>=</code>.</p>
+<p>In our <code>main()</code> function we start by declaring two flags. The <code>:=</code> operator in Go is a short hand for declaring and defining a variable. This could also be done in two steps, like <code>var restore *Bool</code> and <code>restore = flag.Bool(...)</code> (the <code>*</code> here is saying it is a pointer type). The shorthand is nicer. Remember though, any assignment after declaration would just use <code>=</code>.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">restore</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(
 		<span style="color:#e6db74">&#34;restore&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;restore victim directory from _victim&#34;</span>)
 	<span style="color:#a6e22e">verify</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(
 		<span style="color:#e6db74">&#34;verify&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;verify files in victim directory&#34;</span>)
 </pre>
-<p>These are pointers to boolans. Pointers are an address in memory that holds the value (in this case, boolean value). In order to access the value, we dereference it with <code>*</code> when accessing the variable.</p>
+<p>These are pointers to booleans. Pointers are an address in memory that holds a value (in this case, a boolean value). In order to access the value, we dereference it with <code>*</code> when accessing the variable.</p>
 
-<p>This block is checking if either both <code>restore</code> and <code>verify</code> are false or both <code>restore</code> and <code>verify</code> are true. The <code>&amp;&amp;</code> (and) operator has a higher precendence than <code>||</code> (or). Think order of operations with <code>*</code> and <code>+</code>. If we either have both true or neither, we&rsquo;re going to call <code>log.Fatal(...)</code> which prints the message and exits the program.</p>
+<p>The next block is checking if either both <code>restore</code> and <code>verify</code> are false or both <code>restore</code> and <code>verify</code> are true. This is effectively an exclusive-or (xor). The <code>&amp;&amp;</code> (and) operator has a higher precendence than <code>||</code> (or). Think order of operations with multiplication and addition. If we either have both true or neither, we&rsquo;re going to call <code>log.Fatal(...)</code> which prints the message and exits the program.</p>
 
-<p>The <code>log</code> package has a very similar format to <code>fmt</code>. The primary different is it prints to <code>stderr</code> instead of <code>stdout</code>, so it useful for program-related messages, rather than those meant for the end user. It also has nice utility functions like <code>Fatal</code> so we don&rsquo;t need to call both <code>fmt.Println(...)</code> and <code>sys.Exit(1)</code>.</p>
+<p>The <code>log</code> package has a very similar API to <code>fmt</code>. The primary difference is that it prints to <code>stderr</code> instead of <code>stdout</code>, so it useful for program-related messages, rather than those meant for the end user. It also has nice utility functions like <code>Fatal</code> so we don&rsquo;t need to call both <code>fmt.Println(...)</code> and <code>sys.Exit(1)</code>.</p>
 
 <p><em>If you need a referesher on boolean logic, check out video <a href="https://cybering.cc/#02">02.04</a>.</em></p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#66d9ef">if</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> <span style="color:#f92672">||</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> {
 		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Requires one of -verify or -restore.&#34;</span>)
 	}
 </pre>
-<p>If all goes well, and we have run the program with either <code>-verify</code> or <code>-restore</code> then we&rsquo;ll move onto our if statement. Looking at the second part first, we just bail if we call <code>-verify</code>. We&rsquo;ll implement that in a minute.</p>
+<p>If all goes well, and we have run the program with either <code>-verify</code> or <code>-restore</code> then we&rsquo;ll move onto our if statement. Looking at the second part first, we just bail if we call <code>-verify</code> right now. We&rsquo;ll implement that in a minute.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	} <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> {
 		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Verify not implemented yet!&#34;</span>)
 	}
 </pre>
 <p>In our restore block we have two actions. The first is calling <code>os.RemoveAll()</code> on our <code>victim/</code> directory. This will recursively delete (meaning, delete the folder, and all of its contents) the current <code>victim/</code> dir. This is great when we have half of our ransomware working and we can encrypt the files but not recover them!</p>
 
-<p>The pattern of <code>err = ...</code> and <code>if err != nil { ... }</code> is the standard pattern in Go for handling errors. This is to replace C-style errors where some functions return 0 for OK, and some return NULL (0) in error cases. Instead we just get an error, and the if the error is defined, we can handle it. In this case we handle it by printing it out and exiting the program. This is fine since we&rsquo;re not expecting to hit these errors very much.</p>
+<p>The pattern of <code>err = ...</code> and <code>if err != nil { ... }</code> is the standard pattern in Go for handling errors. This is to replace C-style errors where some functions return 0 for OK, and some return NULL (0) in error cases. Instead we just get an error, and the if the error is defined, we can handle it. In this case we handle it by printing it out and exiting the program. This is fine since we&rsquo;re not expecting to hit these errors very often.</p>
 
 <p>The next block uses the <code>github.com/otiai10/copy</code> package to copy <code>_victim/</code> to <code>victim/</code>. Easy enough. Only thing to note, is see how we declare and define the first <code>err</code> with <code>:=</code> and the second we are just reassigning the existing <code>err</code> variable with <code>=</code>.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">		<span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">RemoveAll</span>(<span style="color:#e6db74">&#34;victim&#34;</span>)
@@ -288,7 +288,7 @@
 </pre>
 <h3>Verification</h3>
 
-<p>Our goal with verification is to walk <code>_victim/</code> (the original) and for each file, verify that its SHA256 hash matches a corresponding file in <code>victim/</code>. There are three components to this.</p>
+<p>Our goal with verification is to walk <code>_victim/</code> (the original) and for each file, <em>verify</em> that its SHA256 hash matches a corresponding file in <code>victim/</code>. There are three components to this.</p>
 
 <ol>
 <li>Reading files to get their bytes.</li>
@@ -296,11 +296,11 @@
 <li>Walking a directory.</li>
 </ol>
 
-<p>Thankfully, these are all super easy to do. When I&rsquo;m working on projects I&rsquo;ll often have a <code>scratch/</code> directory where I prototype things and figure out how libraries work. I&rsquo;ll walk you through each of those in short scratch programs. Then we can put them together in <code>util.go</code>.</p>
+<p>Thankfully, these are all super easy to do. When I&rsquo;m working on projects I&rsquo;ll often have a <code>scratch/</code> directory where I prototype things and figure out how things work. I&rsquo;ll walk you through each of these in short scratch programs. Then we can put them together in <code>util.go</code>.</p>
 
-<h3>Reading a file</h3>
+<h4>Reading a file</h4>
 
-<p>In Go, there are <a href="https://gobyexample.com/reading-files">a lot of ways</a> to read a file. We&rsquo;ll use a wrapper here, <code>ioutil</code> that will open and read the file then just give us back the slice of bytes (<code>bs</code>). We check the error and bail if we have one. Finally we cast out slice of bytes to a string as we pass it to be printed out.</p>
+<p>In Go, there are <a href="https://gobyexample.com/reading-files">a lot of ways</a> to read a file. We&rsquo;ll use a wrapper, <code>ioutil</code>, that will open and read the file then just give us back the slice of bytes (<code>bs</code>). We check the error and bail if we have one. Finally we cast our little slice of bytes to a string as we pass it to be printed out.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// scratch/read.go
 </span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
 
@@ -317,7 +317,7 @@
 	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(string(<span style="color:#a6e22e">bs</span>))
 }
 </pre>
-<h3>Hashing some bytes</h3>
+<h4>Hashing some bytes</h4>
 
 <p>Taking a SHA256 is equally as easy. We import <code>crypto/SHA256</code> and pass in a (string cast to) a slice of bytes to <a href="https://golang.org/pkg/crypto/sha256/#Sum256"><code>sha256.Sum256()</code></a>. That gives us back an array of 32 bytes which contains the hash. We print that as hex, giving us a 64 character string.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// scratch/sha256.go
@@ -334,21 +334,21 @@
 	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;%x\n&#34;</span>, <span style="color:#a6e22e">hash</span>)
 }
 </pre>
-<p>If you&rsquo;re on Linux you can run this to verify the output. It echos out the same string, <code>-n</code> for no newline to match our input in the program. We pipe that to sha256sum and see that we&rsquo;re getting the same hash.</p>
+<p>If you&rsquo;re on Linux you can run the following to verify the output. It echos out the same string, <code>-n</code> for no trailing newline to match our input in the program. We pipe that to <code>sha256sum</code> and see that we&rsquo;re getting the same hash.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">echo -n <span style="color:#e6db74">&#34;Let&#39;s take the sha256 of these bytes!&#34;</span> | sha256sum
 </pre>
-<p>If you haven&rsquo;t seen a hashing function before, SHA256 is a cryptographic hash. Cryptographic hashes are meant to take an arbitrary amount of data and map it to a fixed space (e.g. 32 bytes). They are meant to be infeasible to reverse, meaning you should only be able to discover the input that results in a certain hash through bruteforce. Collisions, while possible, should be rare enough to not be considered. Other hashing algorithms, such as <a href="https://www.mscs.dal.ca/~selinger/md5collision/">MD5</a> and <a href="https://security.googleblog.com/2017/02/announcing-first-sha1-collision.html">SHA1</a> can be manipulated to create collisions. This breaks the hash.</p>
+<p>If you haven&rsquo;t seen a hashing function before, SHA256 is a cryptographic hash. Cryptographic hashes are meant to take an arbitrary amount of data and map it to a fixed space (e.g. 32 bytes). They are meant to be infeasible to reverse, meaning you should only be able to discover the input that results in a certain hash through brute force. Collisions, while possible, should be rare enough to not be considered. Other hashing algorithms, such as <a href="https://www.mscs.dal.ca/~selinger/md5collision/">MD5</a> and <a href="https://security.googleblog.com/2017/02/announcing-first-sha1-collision.html">SHA1</a> can be manipulated to create collisions. This breaks the hash.</p>
 
 <p>For our purposes, since SHA256 is consistent, the same input should hash to the same output, so we&rsquo;ll use the hashes of two files to see if they are equivalent. This will help check that we are doing things correctly when decrypting.</p>
 
-<h3>Walking a directory</h3>
+<h4>Walking a directory</h4>
 
-<p>Finally we get to walking a directory. This is also super easy because someone has already done the hard work. We don&rsquo;t have to screw around with handling file system edge cases or writing a tree traversal. The <code>filepath</code> package has a <a href="https://golang.org/pkg/path/filepath/#Walk"><code>Walk()</code></a> function. You provide it with a starting directory and a function that you define. The function gets called on each file or directory.</p>
+<p>Finally we get to take a walk down directory lane. This is also super easy because someone has already done the hard work. We don&rsquo;t have to screw around with handling file system edge cases or writing a tree traversal. The <code>filepath</code> package has a <a href="https://golang.org/pkg/path/filepath/#Walk"><code>Walk()</code></a> function. You provide it with a starting directory and a visitor function that you define. The visitor function gets called on each file or directory.</p>
 
-<p>If you check the docs you&rsquo;ll see that the function <code>Walk()</code> takes as its second argument is of the type <code>WalkFunc</code>. That definition is just below. So you need to pass in a function that matches the <code>WalkFunc</code> prototype.</p>
+<p>If you check the docs you&rsquo;ll see that the function that <code>Walk()</code> takes as its second argument is of the type <code>WalkFunc</code>. That definition is just below. What it is saying is that you need to pass in a function that matches the <code>WalkFunc</code> prototype.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">WalkFunc</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">path</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">info</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">FileInfo</span>, <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>) <span style="color:#66d9ef">error</span>
 </pre>
-<p>In our case, this is <code>onVisit()</code>. In the docs you can check out the definition of the <code>os.FileInfo</code> interface, but the important part is that it has an <code>IsDir()</code> function that returns true when the visitee is a directory. We can ignore those and return. On files we&rsquo;ll print them out.</p>
+<p>In our case, this is <code>onVisit()</code>. In the docs you can check out the definition of the <code>os.FileInfo</code> interface, but the important bit is that it has an <code>IsDir()</code> function that returns true when the visitee (<code>path</code>) is a directory. When it is a directory we can ignore it and return early. On files, we&rsquo;ll print them out.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// scratch/walk.go
 </span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
 
@@ -382,19 +382,19 @@
 	}
 }
 </pre>
-<p>Give it a run and see how it works. You can also remove the <code>IsDir()</code> check here and see it print out the directories too.</p>
+<p>Give it a run and see how it works. You can also remove the <code>IsDir()</code> check and see it print out the directories too. Fun.</p>
 
-<h3>Putting it all together</h3>
+<h4>Putting it all together</h4>
 
-<p>Back in <code>util/util.go</code> we&rsquo;ll update our verify block in <code>main()</code> to contain the following. You&rsquo;ll also need to update your imports of import.</p>
+<p>Back in <code>util/util.go</code> we&rsquo;ll update our <code>else if *verify</code> block in <code>main()</code> to contain the following. You&rsquo;ll also need to update your imports of import.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">		<span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">filepath</span>.<span style="color:#a6e22e">Walk</span>(<span style="color:#e6db74">&#34;_victim&#34;</span>, <span style="color:#a6e22e">onVisit</span>)
 		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
 			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 		}
 </pre>
-<p>Then the party heads over to the <code>onVisit()</code> function. It&rsquo;s all stuff we saw in the last section. We&rsquo;re being tricky with our paths, since we&rsquo;re walking <code>_victim/</code> and checking in on <code>victim/</code> we just need to drop the underscore off the front to get the file we should be verfiying. That&rsquo;s done with the subslice notation <code>[1:]</code>, going from the first character (the one after the zeroth) to the end.</p>
+<p>Then the party heads over to the <code>onVisit()</code> function. We read and take the hash of the original. Then we read and take the hash of the copy. Finally we check that they match.</p>
 
-<p>We take read and take the hash of the original. Then we read and take the hash of the copy. Finally we check that they match.</p>
+<p>It&rsquo;s all stuff we saw in the last section. We&rsquo;re being tricky with our paths, since we&rsquo;re walking <code>_victim/</code> and checking in on <code>victim/</code> we just need to drop the underscore off the front to get the corresponding file that we are verfiying. That&rsquo;s done with the subslice notation <code>[1:]</code>, going from the first character (the one after the zeroth) to the end.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">onVisit</span>(<span style="color:#a6e22e">path</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">fi</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">FileInfo</span>, <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>) <span style="color:#66d9ef">error</span> {
 	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">fi</span>.<span style="color:#a6e22e">IsDir</span>() {
 		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
@@ -432,7 +432,9 @@
 
 <h2>Conclusion</h2>
 
-<p>We have a decent setup for restoring our <code>victim/</code> directory now, we can also check that the files line up between the original and the copy. Up next in the series we&rsquo;ll get to generating our server keypair, and we&rsquo;ll write a couple scratch programs to understand how to use the encryption packages. That will set us up nicely to write the encryptor in Part 3.</p>
+<p>We have a decent setup for restoring our <code>victim/</code> directory now, we can also check that the files line up between the original and the copy.</p>
+
+<p>Up next in the series we&rsquo;ll get to generating our server keypair, and we&rsquo;ll write a couple scratch programs to understand how to use the encryption packages. That will set us up nicely to write the encryptor in Part 3.</p>
 
 <p>Keep on hacking on!</p>
 
