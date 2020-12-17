@@ -153,13 +153,13 @@
 
 <p>Symmetric cryptography uses the same key for encryption and decryption. For example, you have some plaintext and some key, <code>ciphertext = encrypt(plaintext, key)</code>. Going the other direction, with your ciphertext, <code>plaintext = decrypt(ciphertext, key)</code>. The tricky thing here is both parties need to have the secret key, so that needs to be sent over some secure channel.</p>
 
-<p>Asymmetric cryptography is a little different. Each party has a public key and private key. They are as their names describe, one is sharable and the other is to be kept secret. The public key can encrypt data, and the private key can decrypt it. So if you had a message for me, and you had my private key, you could encrypt that message and only I (or whoever has gained possession of my private key) could decrypt it. Conversely, you can also sign and verify. You sign data using the private key, and anyone with the public key can verify that signature.</p>
+<p>Asymmetric cryptography is a little different. Each party has a public key and private key. They are as their names describe, one is sharable and the other is to be kept secret. The public key can encrypt data, and the private key can decrypt it. So if you had a message for me, and you had my public key, you could encrypt that message and only I (or whoever has gained possession of my private key) could decrypt it. Conversely, you can also sign and verify. You sign data using the private key, and anyone with the public key can verify that signature.</p>
 
-<p>In the context of our ransomware the client (the malware that runs on the victim&rsquo;s computer) will encrypt their own private key with the server&rsquo;s public key. This way, the server will hold the <em>key</em> (eh? eh?) to unlocking the victim&rsquo;s files.</p>
+<p>In the context of our ransomware, the client (the malware that runs on the victim&rsquo;s computer) will encrypt their own private key with the server&rsquo;s public key. This way, the server will hold the <em>key</em> (eh? eh?) to unlocking the victim&rsquo;s files.</p>
 
 <h3>RSA</h3>
 
-<p>RSA is a cryptosystem taking it&rsquo;s name from three individuals - Rivest, Shamir, and Adleman. There is also a company called RSA Security, and they throw a big conference also called RSA where vendors go to sell things to each other. Here we are talking about the cryptosystem though.</p>
+<p>RSA is a cryptosystem taking it&rsquo;s name from three individuals - Rivest, Shamir, and Adleman respectively. There is also a company called RSA, and they throw a big conference also called RSA where vendors go to sell security offerings to each other. Here we are talking about the cryptosystem though.</p>
 
 <p>Trail of Bits sings RSA&rsquo;s praises in their blog post <a href="https://blog.trailofbits.com/2019/07/08/fuck-rsa/">Seriously, stop using RSA</a>. You should definitely read that post, you will learn some shit. We are going to disregard their advice though and use RSA because we are cowboy malware authors. At worst, our toy malware will have a crypto flaw in it that Brian Krebs will write a dissertation on after he doxxes us and a few other people who might be us for good measure, and then we will fix the flaw and carry on with our lives.</p>
 
@@ -167,7 +167,7 @@
 
 <h3>Less talk, more typie typie</h3>
 
-<p>Alright, 程序猿 reporting for duty.</p>
+<p>Alright, 程序猿 reporting for duty. Here&rsquo;s a little scratch program that generates a key, encrypts a short plaintext, then decrypts it.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// scratch/asym.go
 </span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
 
@@ -206,13 +206,13 @@
 	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Decrypted:\t%v\n&#34;</span>, <span style="color:#a6e22e">pd</span>)
 }
 </pre>
-<p>First things first, we&rsquo;re importing <code>crypto/rand</code>. This is a cryptographically secure random number generator and not a psuedo random number generator. Pseudo random number generators (<code>math/random</code>) use some cute math to produce seemingly random numbers which <a href="https://blog.securityevaluators.com/hacking-the-javascript-lottery-80cc437e3b7f">are often predictable</a>. This is fine in cases where it doesnt matter but cryptography is a case where it absolutely does matter.</p>
+<p>First things first, we&rsquo;re importing <code>crypto/rand</code>. This is a cryptographically secure random number generator and not a psuedo random number generator. Pseudo random number generators (i.e. <code>math/random</code>) use some cute math to produce seemingly random numbers which <a href="https://blog.securityevaluators.com/hacking-the-javascript-lottery-80cc437e3b7f">are often predictable</a>. This is fine in cases where it doesnt matter but cryptography is a case where it absolutely does matter.</p>
 
-<p>Next we generate our private key by passing in our source of random bytes and a key size in bits to <a href="https://golang.org/pkg/crypto/rsa/#GenerateKey"><code>rsa.GenerateKey()</code></a>. Here we are using 1024 which is small but <a href="https://crypto.stackexchange.com/a/1982/80736">hasn&rsquo;t been factored yet</a>. I think these can be any size but I&rsquo;ve only ever seen multiples of 1024 (i.e. 2048, 3072, 4096). I&rsquo;ve seen keys smaller than 1024 that weren&rsquo;t multiples of 1024 but you get the point.</p>
+<p>Next we generate our private key by passing our source of random bytes and a key size in bits to <a href="https://golang.org/pkg/crypto/rsa/#GenerateKey"><code>rsa.GenerateKey()</code></a>. Here we are using 1024 which is small but <a href="https://crypto.stackexchange.com/a/1982/80736">hasn&rsquo;t been factored yet</a>. I think these can be any size but in practice you only ever seen multiples of 1024 (i.e. 2048, 3072, 4096). I&rsquo;ve seen keys smaller than 1024 that weren&rsquo;t multiples of 1024 but you get the point, generally powers of 2.</p>
 
-<p>Then we get the public key out of the <a href="https://golang.org/pkg/crypto/rsa/#PrivateKey">private key struct</a>, and make a 16 byte plaintext.</p>
+<p>Then we get the public key out of the <a href="https://golang.org/pkg/crypto/rsa/#PrivateKey">private key struct</a>, and also make a 16 byte plaintext.</p>
 
-<p>Onto the encryption. We&rsquo;re using <code>rsa.EncryptOAEP()</code> from Go&rsquo;s <code>crypto/rsa</code>package. Take a look at the <a href="https://golang.org/pkg/crypto/rsa/#EncryptOAEP">docs</a>, get comfortable doing this when writing Go.</p>
+<p>Onto the encryption. We&rsquo;re using <code>rsa.EncryptOAEP()</code> from Go&rsquo;s <code>crypto/rsa</code>package. Take a look at the <a href="https://golang.org/pkg/crypto/rsa/#EncryptOAEP">docs</a>, get comfortable reading docs when writing Go. They are your friend.</p>
 
 <p>We have two choices for encryption in the <code>rsa</code> package. <code>EncryptPKCS1v15()</code> and <code>EncryptOAEP()</code>. Reading the package overview, or the <code>EncryptPKCS1v15</code> description, or the Trail of Bits blog post should guide you to <code>EncryptOAEP()</code>. From the package description -</p>
 
@@ -224,15 +224,15 @@
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#a6e22e">c</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">EncryptOAEP</span>(
 		<span style="color:#a6e22e">sha256</span>.<span style="color:#a6e22e">New</span>(), <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">publicKey</span>, <span style="color:#a6e22e">p</span>, <span style="color:#66d9ef">nil</span>)
 </pre>
-<p>The first is a hash function, which is used to hash the data gotten from the <code>random.Reader</code> that is also passed in. This randomness is used to make sure the same plaintext doesn&rsquo;t encrypt to the same ciphertext. If it did, and say you were encrypting each letter you typed, someone could do a frequency analysis on the ciphertexts and figure out which ones corresponded to which keys.</p>
+<p>The first is a hash function, which is used to hash the data gotten from the <code>random.Reader</code> which is passed in as the second parameter. This randomness is used to make sure the same plaintext doesn&rsquo;t encrypt to the same ciphertext. If it did, and say you were encrypting each letter you typed, someone could do a frequency analysis on the ciphertexts and figure out which ones corresponded to which keys. This would be bad.</p>
 
-<p>Next we pass in our a pointer to our public key and the plaintext. The last parameter is a label, if we were encrypting multiple things we might want to label them. That would ensure that one type of encrypted thing couldn&rsquo;t be confused as the other.</p>
+<p>Next we pass in a pointer to our public key and the plaintext. The last parameter is a label, if we were encrypting multiple things we might want to label them. That would ensure that one type of encrypted thing couldn&rsquo;t be confused as the other. We aren&rsquo;t though so that is <code>nil</code>.</p>
 
-<p>There is also a spooky statement at the end of the description of <code>EncryptOAEP()</code> - <code>The message must be no longer than the length of the public modulus minus twice the hash length, minus a further 2.</code>. Alright, time for some math. Our public modulus is 1024 bits, a sha256 is 32 bytes, and there are 8 bits in a byte. <code>1024 bits - (32 bytes * 2 * 8 bits/byte) - 2 bits = 510 bit message</code>. <code>510 bits / 8 bits/byte = 63.75</code>. Cool, so we can encrypt up to 63 bytes.</p>
+<p>There is also a spooky statement at the end of the description of <code>EncryptOAEP()</code> - <code>The message must be no longer than the length of the public modulus minus twice the hash length, minus a further 2.</code>. Alright, time for some math. Our public modulus is 1024 bits, a SHA256 is 32 bytes, and there are 8 bits in a byte. <code>1024 bits - (32 bytes * 2 * 8 bits/byte) - 2 bits = 510 bit message</code>. <code>510 bits / 8 bits/byte = 63.75</code>. Cool, so we can encrypt up to 63 bytes.</p>
 
 <p>What happens if we try to encrypt 64? You can change the <code>p := []byte{...}</code> line to <code>p := make([]byte, 64)</code> and give it a shot. The function fails with the error <code>crypto/rsa: message too long for RSA public key size</code>.</p>
 
-<p>Wow, look at all that stuff we just learned. <code>Don't roll your own crypto</code> is how they keep you <strong>IGNORANT</strong> of the government&rsquo;s <strong>MATH</strong> backdoors.</p>
+<p>Wow, look at all that stuff we just learned. Glad we chose to use RSA. <strong>Don&rsquo;t roll your own crypto</strong> is how they keep you <strong>IGNORANT</strong> of the government&rsquo;s <strong>MATH</strong> backdoors.</p>
 
 <p><em>Disclaimer: We aren&rsquo;t rolling our own crypto here.</em></p>
 
@@ -244,7 +244,7 @@
 
 <p>I mentioned in Post 0 that we&rsquo;ll be using the <a href="https://medium.com/@tarcisioma/ransomware-encryption-techniques-696531d07bb9">standard ransomware encryption scheme</a>. We will encrypt files with a symmetric key, we will encrypt those keys (they&rsquo;re small enough!) with the client&rsquo;s public key, and the client&rsquo;s private key will be encrypted with the server&rsquo;s public key. Follow that?</p>
 
-<p>So the server&rsquo;s private key can decrypt the client&rsquo;s private key, which can in turn unlock the file&rsquo;s encryption keys.</p>
+<p>So the server&rsquo;s private key can decrypt the client&rsquo;s private key, which can in turn unlock the files&rsquo; encryption keys.</p>
 
 <h2>De/Serialization</h2>
 
@@ -256,11 +256,11 @@
 
 <p><strong>ASN.1</strong> - <a href="https://en.wikipedia.org/wiki/ASN.1">Abstract Syntax Notation 1</a> is an interface description format for defining data structures.</p>
 
-<p><strong>DER</strong> - <a href="https://en.wikipedia.org/wiki/X.690#DER_encoding">Distinguished Encoding Rules</a> is a way to encode ASN.1 defined data. Described in the X.690 standard, nice0.</p>
+<p><strong>DER</strong> - <a href="https://en.wikipedia.org/wiki/X.690#DER_encoding">Distinguished Encoding Rules</a> is a way to encode ASN.1 defined data. Described in the <code>X.690</code> standard, <code>nice0</code>.</p>
 
 <h2>Key Generation</h2>
 
-<p>Let&rsquo;s get to it then! We&rsquo;ll be generating a keypair, writing our RSA / PKCS1 keys out in an ASN.1 DER encoded format. For this one we&rsquo;re upping the bits to 2k48 because we&rsquo;ll be encrypting the client key (1024 bits) and from our formula <code>(2048 bits - (32 bytes * 2 * 8 bits/byte) - 2) = 1534 bits</code>, AKA enough space to fit a 1024 bit key. We could go as low as a 1538 bit server key but using something that isn&rsquo;t a power of 2 would offend the divine numerology and our malware would no longer be blessed.</p>
+<p>Let&rsquo;s get to it then! We&rsquo;ll be generating a keypair, writing our RSA / PKCS1 keys out in an ASN.1 DER encoded format. For this one we&rsquo;re upping the bits to 2k48 because we&rsquo;ll be encrypting the client key (1k24 bits) and from our formula <code>(2048 bits - (32 bytes * 2 * 8 bits/byte) - 2) = 1534 bits</code>, AKA enough space to fit a 1024 bit key. We could go as low as a 1538 bit server key but using something that isn&rsquo;t a power of 2 would offend the divine numerology and our malware would no longer be blessed.</p>
 
 <p>First, we don&rsquo;t want to overwrite our server keypair so we&rsquo;re going to check if those files exist.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">errPub</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stat</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>)
@@ -275,7 +275,7 @@
 		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;keypair exists, will not overwrite&#34;</span>)	
 	}
 </pre>
-<p>Following that, we generate a key, get the DER encoded bytes of the public key, write them to a file, ditto private key.</p>
+<p>Following that, we generate a key, get the DER encoded bytes of the public key, write them to a file, ditto for the private key.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">privateKey</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">GenerateKey</span>(<span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#ae81ff">2048</span>)
 	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
 		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
@@ -293,7 +293,7 @@
 		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 	}
 </pre>
-<p>We also add a cute little <code>printBytes()</code> function to pretty print our public key in a way we can just paste into our client. Note we also print the bytes when the keys exist because we might want to reprint those.</p>
+<p>We also add a cute little <code>printBytes()</code> function to pretty print our public key in a way we can just paste into our client. Note, we also print the bytes when the keys exist because we might want to reprint those.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// util/genkey.go
 </span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
 
@@ -356,7 +356,9 @@
 	<span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span>)
 }
 </pre>
-<p>Now we run it. I&rsquo;m going to do so in the server directory which doesn&rsquo;t exist yet. Worry if yours outputs the same key as mine.</p>
+<p>Now we run it. I&rsquo;m going to do so in the <code>~/prog/rw/server/</code> directory which doesn&rsquo;t exist yet.</p>
+
+<p>Worry if your&rsquo;s outputs the same key as mine and don&rsquo;t worry about the converse.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ mkdir server
 $ cd server
 $ go run ../util/genkey.go
