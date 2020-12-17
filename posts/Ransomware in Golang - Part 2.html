@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Key generation and some scratch encryption...">
+  <meta property="og:title" content="Ransomware in Golang - Part 2">
+  <meta property="og:description" content="Key generation and some scratch encryption...">
+  <meta property="og:site_name" content="TACIX.AT">
+  <meta name="twitter:site" content="@cyberingcc">
+  <title>TACIX.AT - Ransomware in Golang - Part 2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inconsolata&family=Major+Mono+Display&display=swap" rel="stylesheet"> 
+  <style>
+    html {
+      height: 100%;
+    }
+    
+    header {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;      
+      width: 100%;
+      color: #EEE;
+      background-color: #333;
+      margin: 0;
+      height: 100%;
+      font-size: 28px;
+      font-family: 'Inconsolata', monospace;
+    }
+
+    footer {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+    }
+
+    a {
+      color: #EEE;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    a:visited {
+      color: #DDD;
+    }
+
+    #title {
+      flex-grow: 1;
+      font-size: 32px;
+      font-weight: 300;
+      padding: 10px 0px;
+    }
+
+    #about {
+      font-size: 24px;
+      margin-top: 14px;
+    }
+
+    #main {
+      flex-grow: 1;
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      padding: 30px 0px;
+    }
+
+    @media only screen and (max-width: 959px) {
+      html {
+        padding: 5px;
+      }
+
+      header {
+        width: 100%;
+      }
+
+      #main {
+        width: 100%;
+      }
+
+      footer {
+        width: 100%;
+      }
+    }
+
+    
+    #date {
+      font-size: 18px;
+      font-style: italic;
+    }
+
+    #title {
+      font-size: 32px;
+    }
+
+    h1, h2, h3, h4, h5 {
+      color: #a8caee;
+      font-family: 'Major Mono Display', monospace;
+    }
+
+    pre {
+      font-family: 'Inconsolata', monospace !important;
+    }
+
+    p a {
+      text-decoration: underline;
+      line-height: 32px;
+    }
+
+    code {
+      color: #fbb5b5;
+      background-color: #3e3e3e;
+      border-radius: 4px;
+    }
+
+    pre {
+      overflow: auto;
+    }
+
+    @media only screen and (max-width: 959px) {
+      body {
+        font-size: 18px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <header>
+    <span id=title><a href=/>TACIX.AT</a></span>
+    <span id=about><a href=/about>About</a></span>
+  </header>
+
+  <div id=main>
+  
+  <div id=title>Ransomware in Golang - Part 2</div>
+  <div id=date>2020/12/11 13:37</div>
+  <div>
+<p>In case you missed it, check out <a href="https://tacix.at/posts/Ransomware%20in%20Golang%20-%20Part%200.html">Part 0</a> which will serve as our design doc and outline while we&rsquo;re building this.</p>
+
+<h2>Public Key Cryptography</h2>
+
+<p>Two types of encryption schemes to be aware of are public key (or asymmetric) cryptography, and symmetric-key cryptography.</p>
+
+<p>Symmetric cryptography uses the same key for encryption and decryption. For example, you have some plaintext and some key, <code>ciphertext = encrypt(plaintext, key)</code>. Going the other direction, with your ciphertext, <code>plaintext = decrypt(ciphertext, key)</code>. The tricky thing here is both parties need to have the secret key, so that needs to be sent over some secure channel.</p>
+
+<p>Asymmetric cryptography is a little different. Each party has a public key and private key. They are as their names describe, one is sharable and the other is to be kept secret. The public key can encrypt data, and the private key can decrypt it. So if you had a message for me, and you had my private key, you could encrypt that message and only I (or whoever has gained possession of my private key) could decrypt it. Conversely, you can also sign and verify. You sign data using the private key, and anyone with the public key can verify that signature.</p>
+
+<p>In the context of our ransomware the client (the malware that runs on the victim&rsquo;s computer) will encrypt their own private key with the server&rsquo;s public key. This way, the server will hold the <em>key</em> (eh? eh?) to unlocking the victim&rsquo;s files.</p>
+
+<h3>RSA</h3>
+
+<p>RSA is a cryptosystem taking it&rsquo;s name from three individuals - Rivest, Shamir, and Adleman. There is also a company called RSA Security, and they throw a big conference also called RSA where vendors go to sell things to each other. Here we are talking about the cryptosystem though.</p>
+
+<p>Trail of Bits sings RSA&rsquo;s praises in their blog post <a href="https://blog.trailofbits.com/2019/07/08/fuck-rsa/">Seriously, stop using RSA</a>. You should definitely read that post, you will learn some shit. We are going to disregard their advice though and use RSA because we are cowboy malware authors. At worst, our toy malware will have a crypto flaw in it that Brian Krebs will write a dissertation on after he doxxes us and a few other people who might be us for good measure, and then we will fix the flaw and carry on with our lives.</p>
+
+<p>More likely, Golang&rsquo;s RSA library will have sane defaults and everything will be OK. Until, of course, a flaw is found in that library <a href="https://mattermost.com/blog/coordinated-disclosure-go-xml-vulnerabilities/">like these cool XML/SAML vulns</a>. C&rsquo;est la vie.</p>
+
+<h3>Less talk, more typie typie 程序猿</h3>
+
+<p>Alright.</p>
+
+<h2>De/Serialization</h2>
+
+<p>So we have x.509, PKCS1, ASN.1, and DER.</p>
+
+<h2>Key Generation</h2>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;crypto/rand&#34;</span>
+	<span style="color:#e6db74">&#34;crypto/rsa&#34;</span>
+	<span style="color:#e6db74">&#34;crypto/x509&#34;</span>
+	<span style="color:#e6db74">&#34;fmt&#34;</span>
+	<span style="color:#e6db74">&#34;io/ioutil&#34;</span>
+	<span style="color:#e6db74">&#34;log&#34;</span>
+	<span style="color:#e6db74">&#34;os&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span> []<span style="color:#66d9ef">byte</span>) {
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\tpub := []byte{&#34;</span>)
+	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">pub</span> {
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">i</span> &gt; <span style="color:#ae81ff">0</span> {
+			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;,&#34;</span>)
+		}
+
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">%</span> <span style="color:#ae81ff">8</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> {
+			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n\t\t&#34;</span>)
+		}
+
+		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34; 0x%02x&#34;</span>, <span style="color:#a6e22e">pub</span>[<span style="color:#a6e22e">i</span>])
+	}
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34; }&#34;</span>)
+}
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	 <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">errPub</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stat</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>)
+	 <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">errPrv</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stat</span>(<span style="color:#e6db74">&#34;key.prv&#34;</span>)
+
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">errPub</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">errPrv</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">pub</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+		<span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span>)
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;keypair exists, will not overwrite&#34;</span>)	
+	}
+
+	<span style="color:#a6e22e">privateKey</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">GenerateKey</span>(<span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#ae81ff">2048</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+
+	<span style="color:#a6e22e">pub</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">x509</span>.<span style="color:#a6e22e">MarshalPKCS1PublicKey</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">privateKey</span>.<span style="color:#a6e22e">PublicKey</span>)
+	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">WriteFile</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>, <span style="color:#a6e22e">pub</span>, <span style="color:#ae81ff">0644</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+
+	<span style="color:#a6e22e">prv</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">x509</span>.<span style="color:#a6e22e">MarshalPKCS1PrivateKey</span>(<span style="color:#a6e22e">privateKey</span>)
+	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">WriteFile</span>(<span style="color:#e6db74">&#34;key.prv&#34;</span>, <span style="color:#a6e22e">prv</span>, <span style="color:#ae81ff">0644</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+
+	<span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span>)
+}
+</pre>
+<h2>Conclusion</h2>
+
+  </div>
+
+  </div>
+
+  <footer>
+  </footer>
+</body>
+</html>
