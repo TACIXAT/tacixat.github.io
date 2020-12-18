@@ -1,6 +1,6 @@
 # About
 
-Personal blog for yours truly. Don't take me too seriously, I sure as hell don't.
+Personal blog for yours truly.
 
 ## Tech
 
@@ -10,10 +10,10 @@ For work I'm a software engineer in the security R&D space. I've worked at Sourc
 
 ## Personal
 
-I live in Koreatown in Los Angeles. I shoot a lot of pool, do body weight exercises, snowboard, and skate a bit. I have a Wrangler and really enjoy driving slowly on dirt roads.
+I live in Koreatown in Los Angeles. I shoot a lot of pool, do body weight exercises, snowboard, and ride bikes. I have a Wrangler and really enjoy driving slowly on dirt roads.
 
-I follow a strict diet due to some health issues. I have a long list of common foods I don't eat, but I still get to eat meat so I eat a lot of meat. Sugar is an illuminati trap.
+I follow a strict diet due to some health issues. I have a long list of common foods I don't eat, but I still can eat meat so I eat a lot of meat.
 
-I also meditate. I'm interested in Daoist internal alchemy. Figure it's the best bet on getting super powers in this lifetime. Sitting is hard work though.
+I also meditate. I'm interested in Daoist internal alchemy. Figure it's the best bet on getting super powers in this lifetime. 
 
-*Updated: 11/06/2020*
+*Updated: 12/17/2020*
