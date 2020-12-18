@@ -5,10 +5,10 @@
     <description>Personal projects in programming and the dark arts..</description>
     <managingEditor> (Taci Xat)</managingEditor>
     <pubDate>Mon, 18 May 2020 12:18:00 -0700</pubDate>
-    <lastBuildDate>Thu, 17 Dec 2020 17:34:07 -0800</lastBuildDate>
+    <lastBuildDate>Thu, 17 Dec 2020 17:35:46 -0800</lastBuildDate>
     <item>
       <title>Ransomware in Golang - Part 2</title>
-      <link>http://tacix.at/%!s(MISSING).html</link>
+      <link>http://tacix.at/Ransomware in Golang - Part 2.html</link>
       <description>Key generation and some scratch encryption...</description>
       <content:encoded><![CDATA[<p>In case you&rsquo;re late to class, check out parts 0 and 1 at <a href="https://tacix.at">tacix.at</a>.</p>
 
@@ -278,7 +278,7 @@ key.prv  key.pub
     </item>
     <item>
       <title>Ransomware in Golang - Part 1</title>
-      <link>http://tacix.at/%!s(MISSING).html</link>
+      <link>http://tacix.at/Ransomware in Golang - Part 1.html</link>
       <description>Environment and victim directory setup...</description>
       <content:encoded><![CDATA[<p>In case you missed it, check out <a href="https://tacix.at/posts/Ransomware%20in%20Golang%20-%20Part%200.html">Part 0</a> which will serve as our design doc and outline while we&rsquo;re building this.</p>
 
@@ -578,7 +578,7 @@ key.prv  key.pub
     </item>
     <item>
       <title>Ransomware in Golang - Part 0</title>
-      <link>http://tacix.at/%!s(MISSING).html</link>
+      <link>http://tacix.at/Ransomware in Golang - Part 0.html</link>
       <description>Go ransomware design document...</description>
       <content:encoded><![CDATA[<h2>Summary</h2>
 
@@ -677,7 +677,7 @@ Server</p>
     </item>
     <item>
       <title>Writing my own static site generator</title>
-      <link>http://tacix.at/%!s(MISSING).html</link>
+      <link>http://tacix.at/Writing my own static site generator.html</link>
       <description>Writing a simple static site generate in Golang to avoid learning Jekyll...</description>
       <content:encoded><![CDATA[<h2>Introduction</h2>
 
