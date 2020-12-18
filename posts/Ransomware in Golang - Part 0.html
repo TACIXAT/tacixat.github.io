@@ -38,6 +38,7 @@
       margin: 0 auto;
       display: flex;
       flex-direction: row;
+      min-height: 50px;
     }
 
     a {
@@ -72,6 +73,11 @@
       display: flex;
       flex-direction: column;
       padding: 30px 0px;
+    }
+
+    #rss-link {
+      flex-grow: 1;
+      text-align: right;
     }
 
     @media only screen and (max-width: 959px) {
@@ -145,8 +151,6 @@
   <div id=title>Ransomware in Golang - Part 0</div>
   <div id=date>2020/11/06 13:37</div>
   <div>
-<h2>Summary</h2>
-
 <p>We’re going to build some ransomware. This document covers the high level design and a few details to get us started. We’ll be using an asymmetric + symmetric encryption scheme for locking files. We’ll also build a server for handling decryption. All of this will be written in Go, so it will be cross platform. Our malware will show off Go’s great parallelization and networking capabilities. From there we’ll get into the technical details and start looking at anti-analysis tricks and signature writing. I’ll take you through everything step by step.</p>
 
 <h2>Design</h2>
@@ -242,6 +246,7 @@ Server</p>
   </div>
 
   <footer>
+    <a id=rss-link href="/rss.xml">rss</a>
   </footer>
 </body>
 </html>

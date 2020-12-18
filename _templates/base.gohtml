@@ -38,6 +38,7 @@
       margin: 0 auto;
       display: flex;
       flex-direction: row;
+      min-height: 50px;
     }
 
     a {
@@ -74,6 +75,11 @@
       padding: 30px 0px;
     }
 
+    #rss-link {
+      flex-grow: 1;
+      text-align: right;
+    }
+
     @media only screen and (max-width: 959px) {
       html {
         padding: 5px;
@@ -106,6 +112,7 @@
   </div>
 
   <footer>
+    <a id=rss-link href="/rss.xml">rss</a>
   </footer>
 </body>
 </html>

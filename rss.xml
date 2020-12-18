@@ -5,12 +5,12 @@
     <description>Personal projects in programming and the dark arts..</description>
     <managingEditor> (Taci Xat)</managingEditor>
     <pubDate>Mon, 18 May 2020 12:18:00 -0700</pubDate>
-    <lastBuildDate>Thu, 17 Dec 2020 17:39:59 -0800</lastBuildDate>
+    <lastBuildDate>Thu, 17 Dec 2020 19:36:10 -0800</lastBuildDate>
     <item>
       <title>Ransomware in Golang - Part 2</title>
       <link>https://tacix.at/posts/Ransomware in Golang - Part 2.html</link>
       <description>Key generation and some scratch encryption...</description>
-      <content:encoded><![CDATA[<p>In case you&rsquo;re late to class, check out parts 0 and 1 at <a href="https://tacix.at">tacix.at</a>.</p>
+      <content:encoded><![CDATA[<p>If you&rsquo;re late to class, check out parts 0 and 1 at <a href="https://tacix.at">tacix.at</a>.</p>
 
 <h2>Public Key Cryptography</h2>
 
@@ -580,9 +580,7 @@ key.prv  key.pub
       <title>Ransomware in Golang - Part 0</title>
       <link>https://tacix.at/posts/Ransomware in Golang - Part 0.html</link>
       <description>Go ransomware design document...</description>
-      <content:encoded><![CDATA[<h2>Summary</h2>
-
-<p>We’re going to build some ransomware. This document covers the high level design and a few details to get us started. We’ll be using an asymmetric + symmetric encryption scheme for locking files. We’ll also build a server for handling decryption. All of this will be written in Go, so it will be cross platform. Our malware will show off Go’s great parallelization and networking capabilities. From there we’ll get into the technical details and start looking at anti-analysis tricks and signature writing. I’ll take you through everything step by step.</p>
+      <content:encoded><![CDATA[<p>We’re going to build some ransomware. This document covers the high level design and a few details to get us started. We’ll be using an asymmetric + symmetric encryption scheme for locking files. We’ll also build a server for handling decryption. All of this will be written in Go, so it will be cross platform. Our malware will show off Go’s great parallelization and networking capabilities. From there we’ll get into the technical details and start looking at anti-analysis tricks and signature writing. I’ll take you through everything step by step.</p>
 
 <h2>Design</h2>
 
@@ -679,9 +677,7 @@ Server</p>
       <title>Writing my own static site generator</title>
       <link>https://tacix.at/posts/Writing my own static site generator.html</link>
       <description>Writing a simple static site generate in Golang to avoid learning Jekyll...</description>
-      <content:encoded><![CDATA[<h2>Introduction</h2>
-
-<p>Hey, first post! I wanted to set up a blog to track the things that I work on. I figured you can&rsquo;t beat free, so I set up GitHub Pages. Jekyll is the default for Pages, so I dove in to check it out. I could not really figure out a minimal example. Do I just clone in an entire theme to my repo and start working from there? What are all these directories? I need to install Ruby? Figured I could write one in ~100 lines of code, so I set off.</p>
+      <content:encoded><![CDATA[<p>Hey, first post! I wanted to set up a blog to track the things that I work on. I figured you can&rsquo;t beat free, so I set up GitHub Pages. Jekyll is the default for Pages, so I dove in to check it out. I could not really figure out a minimal example. Do I just clone in an entire theme to my repo and start working from there? What are all these directories? I need to install Ruby? Figured I could write one in ~100 lines of code, so I set off.</p>
 
 <h2>Golang</h2>
 
