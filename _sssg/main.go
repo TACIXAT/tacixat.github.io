@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/alecthomas/chroma/formatters/html"
+	"github.com/gorilla/feeds"
 	"gopkg.in/russross/blackfriday.v2"
 	"html/template"
 	"io/ioutil"
@@ -28,10 +29,10 @@ type IndexData struct {
 }
 
 type PostData struct {
-	Meta MetaData
-	Tags []string
-	Date time.Time
-	Raw  template.HTML
+	Meta      MetaData
+	Tags      []string
+	Date      time.Time
+	Raw       template.HTML
 	Published bool
 }
 
@@ -118,8 +119,9 @@ func genAbout() {
 
 	ad := AboutData{
 		Meta: MetaData{
-			Title:       "About",
-			Description: "The handful of ways by which the author defines himself.",
+			Title: "About",
+			Description: 
+				"The handful of ways by which the author defines himself.",
 		},
 	}
 	ad.Raw = template.HTML(blackfriday.Run(md))
@@ -129,6 +131,48 @@ func genAbout() {
 			"_templates/about.gohtml",
 			"_templates/base.gohtml",
 		}, "about.html", ad)
+}
+
+func genRss(id *IndexData) {
+	location, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	feed := &feeds.Feed{
+		Title: "tacix.at",
+        Link: &feeds.Link{Href: "http://tacix.at"},
+        Description: "Personal projects in programming and the dark arts..",
+        Author: &feeds.Author{Name: "Taci Xat"},
+        Created: time.Date(2020, time.May, 18, 12, 18, 0, 0, location),
+        Updated: time.Now(),
+	}
+
+	for _, p := range id.Posts {
+		fmt.Println(p.Meta.Title)
+		fmt.Println(p.Meta.Description)
+		link := fmt.Sprintf("http://tacix.at/%s.html")
+		feed.Items = append(feed.Items, &feeds.Item{
+			Title: p.Meta.Title,
+			Link: &feeds.Link{Href: link},
+			Description: p.Meta.Description,
+			Author: &feeds.Author{Name: "tacixat"},
+			Created: p.Date,
+		})
+	}
+
+	f, err := os.Create("rss.xml")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	rss, err := feed.ToRss()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	f.Write([]byte(rss))
 }
 
 func main() {
@@ -141,6 +185,7 @@ func main() {
 	}
 
 	genPosts(id)
+	genRss(id)
 
 	writeTemplate(
 		[]string{
