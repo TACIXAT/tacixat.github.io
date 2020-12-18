@@ -5,11 +5,274 @@
     <description>Personal projects in programming and the dark arts..</description>
     <managingEditor> (Taci Xat)</managingEditor>
     <pubDate>Mon, 18 May 2020 12:18:00 -0700</pubDate>
-    <lastBuildDate>Thu, 17 Dec 2020 17:23:27 -0800</lastBuildDate>
+    <lastBuildDate>Thu, 17 Dec 2020 17:34:07 -0800</lastBuildDate>
     <item>
       <title>Ransomware in Golang - Part 2</title>
       <link>http://tacix.at/%!s(MISSING).html</link>
       <description>Key generation and some scratch encryption...</description>
+      <content:encoded><![CDATA[<p>In case you&rsquo;re late to class, check out parts 0 and 1 at <a href="https://tacix.at">tacix.at</a>.</p>
+
+<h2>Public Key Cryptography</h2>
+
+<p>Two types of encryption schemes to be aware of are public key (or asymmetric) cryptography, and symmetric-key cryptography.</p>
+
+<p>Symmetric cryptography uses the same key for encryption and decryption. For example, you have some plaintext and some key, <code>ciphertext = encrypt(plaintext, key)</code>. Going the other direction, with your ciphertext, <code>plaintext = decrypt(ciphertext, key)</code>. The tricky thing here is both parties need to have the secret key, so that needs to be sent over some secure channel.</p>
+
+<p>Asymmetric cryptography is a little different. Each party has a public key and private key. They are as their names describe, one is sharable and the other is to be kept secret. The public key can encrypt data, and the private key can decrypt it. So if you had a message for me, and you had my public key, you could encrypt that message and only I (or whoever has gained possession of my private key) could decrypt it. Conversely, you can also sign and verify. You sign data using the private key, and anyone with the public key can verify that signature.</p>
+
+<p>In the context of our ransomware, the client (the malware that runs on the victim&rsquo;s computer) will encrypt their own private key with the server&rsquo;s public key. This way, the server will hold the <em>key</em> (eh? eh?) to unlocking the victim&rsquo;s files.</p>
+
+<h3>RSA</h3>
+
+<p>RSA is a cryptosystem taking it&rsquo;s name from three individuals - Rivest, Shamir, and Adleman respectively. There is also a company called RSA, and they throw a big conference also called RSA where vendors go to sell security offerings to each other. Here we are talking about the cryptosystem though.</p>
+
+<p>Trail of Bits sings RSA&rsquo;s praises in their blog post <a href="https://blog.trailofbits.com/2019/07/08/fuck-rsa/">Seriously, stop using RSA</a>. You should definitely read that post, you will learn some shit. We are going to disregard their advice though and use RSA because we are cowboy malware authors. At worst, our toy malware will have a crypto flaw in it that Brian Krebs will write a dissertation on after he doxxes us and a few other people who might be us for good measure, and then we will fix the flaw and carry on with our lives.</p>
+
+<p>More likely, Golang&rsquo;s RSA library will have sane defaults and everything will be OK. Until, of course, a flaw is found in that library <a href="https://mattermost.com/blog/coordinated-disclosure-go-xml-vulnerabilities/">like these cool XML/SAML vulns</a>. C&rsquo;est la vie.</p>
+
+<h3>Less talk, more typie typie</h3>
+
+<p>Alright, 程序猿 reporting for duty. Here&rsquo;s a little scratch program that generates a key, encrypts a short plaintext, then decrypts it.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// scratch/asym.go
+</span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;crypto/rand&#34;</span>
+	<span style="color:#e6db74">&#34;crypto/rsa&#34;</span>
+	<span style="color:#e6db74">&#34;crypto/sha256&#34;</span>
+	<span style="color:#e6db74">&#34;log&#34;</span>
+	<span style="color:#e6db74">&#34;fmt&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#a6e22e">privateKey</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">GenerateKey</span>(<span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#ae81ff">1024</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+	<span style="color:#a6e22e">publicKey</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">privateKey</span>.<span style="color:#a6e22e">PublicKey</span>
+
+	<span style="color:#a6e22e">p</span> <span style="color:#f92672">:=</span> []<span style="color:#66d9ef">byte</span>{<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">4</span>,<span style="color:#ae81ff">5</span>,<span style="color:#ae81ff">6</span>,<span style="color:#ae81ff">7</span>,<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">9</span>,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">4</span>,<span style="color:#ae81ff">5</span>}
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Plaintext:\t%v\n&#34;</span>, <span style="color:#a6e22e">p</span>)
+
+	<span style="color:#a6e22e">c</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">EncryptOAEP</span>(
+		<span style="color:#a6e22e">sha256</span>.<span style="color:#a6e22e">New</span>(), <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">publicKey</span>, <span style="color:#a6e22e">p</span>, <span style="color:#66d9ef">nil</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Ciphertext:\t%v\n&#34;</span>, <span style="color:#a6e22e">c</span>)
+
+	<span style="color:#a6e22e">pd</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">DecryptOAEP</span>(
+		<span style="color:#a6e22e">sha256</span>.<span style="color:#a6e22e">New</span>(), <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#a6e22e">privateKey</span>, <span style="color:#a6e22e">c</span>, <span style="color:#66d9ef">nil</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Decrypted:\t%v\n&#34;</span>, <span style="color:#a6e22e">pd</span>)
+}
+</pre>
+<p>First things first, we&rsquo;re importing <code>crypto/rand</code>. This is a cryptographically secure random number generator and not a psuedo random number generator. Pseudo random number generators (i.e. <code>math/random</code>) use some cute math to produce seemingly random numbers which <a href="https://blog.securityevaluators.com/hacking-the-javascript-lottery-80cc437e3b7f">are often predictable</a>. This is fine in cases where it doesnt matter but cryptography is a case where it absolutely does matter.</p>
+
+<p>Next we generate our private key by passing our source of random bytes and a key size in bits to <a href="https://golang.org/pkg/crypto/rsa/#GenerateKey"><code>rsa.GenerateKey()</code></a>. Here we are using 1024 which is small but <a href="https://crypto.stackexchange.com/a/1982/80736">hasn&rsquo;t been factored yet</a>. I think these can be any size but in practice you only ever seen multiples of 1024 (i.e. 2048, 3072, 4096). I&rsquo;ve seen keys smaller than 1024 that weren&rsquo;t multiples of 1024 but you get the point, generally powers of 2.</p>
+
+<p>Then we get the public key out of the <a href="https://golang.org/pkg/crypto/rsa/#PrivateKey">private key struct</a>, and also make a 16 byte plaintext.</p>
+
+<p>Onto the encryption. We&rsquo;re using <code>rsa.EncryptOAEP()</code> from Go&rsquo;s <code>crypto/rsa</code>package. Take a look at the <a href="https://golang.org/pkg/crypto/rsa/#EncryptOAEP">docs</a>, get comfortable reading docs when writing Go. They are your friend.</p>
+
+<p>We have two choices for encryption in the <code>rsa</code> package. <code>EncryptPKCS1v15()</code> and <code>EncryptOAEP()</code>. Reading the package overview, or the <code>EncryptPKCS1v15</code> description, or the Trail of Bits blog post should guide you to <code>EncryptOAEP()</code>. From the package description -</p>
+
+<blockquote>
+<p>The original specification for encryption and signatures with RSA is PKCS #1 and the terms &ldquo;RSA encryption&rdquo; and &ldquo;RSA signatures&rdquo; by default refer to PKCS #1 version 1.5. However, that specification has flaws and new designs should use version 2, usually called by just OAEP and PSS, where possible.</p>
+</blockquote>
+
+<p>We&rsquo;ve decided on <code>OAEP</code>, let&rsquo;s review some of the parameters.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#a6e22e">c</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">EncryptOAEP</span>(
+		<span style="color:#a6e22e">sha256</span>.<span style="color:#a6e22e">New</span>(), <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">publicKey</span>, <span style="color:#a6e22e">p</span>, <span style="color:#66d9ef">nil</span>)
+</pre>
+<p>The first is a hash function, which is used to hash the data gotten from the <code>random.Reader</code> which is passed in as the second parameter. This randomness is used to make sure the same plaintext doesn&rsquo;t encrypt to the same ciphertext. If it did, and say you were encrypting each letter you typed, someone could do a frequency analysis on the ciphertexts and figure out which ones corresponded to which keys. This would be bad.</p>
+
+<p>Next we pass in a pointer to our public key and the plaintext. The last parameter is a label, if we were encrypting multiple things we might want to label them. That would ensure that one type of encrypted thing couldn&rsquo;t be confused as the other. We aren&rsquo;t though so that is <code>nil</code>.</p>
+
+<p>There is also a spooky statement at the end of the description of <code>EncryptOAEP()</code> - <code>The message must be no longer than the length of the public modulus minus twice the hash length, minus a further 2.</code>. Alright, time for some math. Our public modulus is 1024 bits, a SHA256 is 32 bytes, and there are 8 bits in a byte. <code>1024 bits - (32 bytes * 2 * 8 bits/byte) - 2 bits = 510 bit message</code>. <code>510 bits / 8 bits/byte = 63.75</code>. Cool, so we can encrypt up to 63 bytes.</p>
+
+<p>What happens if we try to encrypt 64? You can change the <code>p := []byte{...}</code> line to <code>p := make([]byte, 64)</code> and give it a shot. The function fails with the error <code>crypto/rsa: message too long for RSA public key size</code>.</p>
+
+<p>Wow, look at all that stuff we just learned. Glad we chose to use RSA. <strong>Don&rsquo;t roll your own crypto</strong> is how they keep you <strong>IGNORANT</strong> of the government&rsquo;s <strong>MATH</strong> backdoors.</p>
+
+<p><em>Disclaimer: We aren&rsquo;t rolling our own crypto here.</em></p>
+
+<p>I&rsquo;ll do a post on ECDSA and U2F tokens in the future and we can learn a little bit about the government&rsquo;s new backdoored math.</p>
+
+<p><em>Also Disclaimer: I have no evidence of backdoors.</em></p>
+
+<h2>Standard Ransomware Crypto Scheme</h2>
+
+<p>I mentioned in Post 0 that we&rsquo;ll be using the <a href="https://medium.com/@tarcisioma/ransomware-encryption-techniques-696531d07bb9">standard ransomware encryption scheme</a>. We will encrypt files with a symmetric key, we will encrypt those keys (they&rsquo;re small enough!) with the client&rsquo;s public key, and the client&rsquo;s private key will be encrypted with the server&rsquo;s public key. Follow that?</p>
+
+<p>So the server&rsquo;s private key can decrypt the client&rsquo;s private key, which can in turn unlock the files&rsquo; encryption keys.</p>
+
+<h2>De/Serialization</h2>
+
+<p>That means we have to generate the server&rsquo;s keypair, save them, and be able to load them back up whenever the server starts. We also want to output the server&rsquo;s public key as bytes so that we can load them. Let&rsquo;s learn some terms.</p>
+
+<p><strong>X.509</strong> - This is a <a href="https://en.wikipedia.org/wiki/X.509">standard</a> that defines the format of public key certificates.</p>
+
+<p><strong>PKCS #1</strong> - <a href="https://en.wikipedia.org/wiki/PKCS_1">Public Key Cryptography Standards numero Uno</a>. This defined the RSA algorithm and properties.</p>
+
+<p><strong>ASN.1</strong> - <a href="https://en.wikipedia.org/wiki/ASN.1">Abstract Syntax Notation 1</a> is an interface description format for defining data structures.</p>
+
+<p><strong>DER</strong> - <a href="https://en.wikipedia.org/wiki/X.690#DER_encoding">Distinguished Encoding Rules</a> is a way to encode ASN.1 defined data. Described in the <code>X.690</code> standard, <code>nice0</code>.</p>
+
+<h2>Key Generation</h2>
+
+<p>Let&rsquo;s get to it then! We&rsquo;ll be generating a keypair, writing our RSA / PKCS1 keys out in an ASN.1 DER encoded format. For this one we&rsquo;re upping the bits to 2k48 because we&rsquo;ll be encrypting the client key (1k24 bits) and from our formula <code>(2048 bits - (32 bytes * 2 * 8 bits/byte) - 2) = 1534 bits</code>, AKA enough space to fit a 1024 bit key. We could go as low as a 1538 bit server key but using something that isn&rsquo;t a power of 2 would offend the divine numerology and our malware would no longer be blessed.</p>
+
+<p>First, we don&rsquo;t want to overwrite our server keypair so we&rsquo;re going to check if those files exist.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">errPub</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stat</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>)
+	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">errPrv</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stat</span>(<span style="color:#e6db74">&#34;key.prv&#34;</span>)
+
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">errPub</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">errPrv</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">pub</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+		<span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span>)
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;keypair exists, will not overwrite&#34;</span>)	
+	}
+</pre>
+<p>Following that, we generate a key, get the DER encoded bytes of the public key, write them to a file, ditto for the private key.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">privateKey</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">GenerateKey</span>(<span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#ae81ff">2048</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+
+	<span style="color:#a6e22e">pub</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">x509</span>.<span style="color:#a6e22e">MarshalPKCS1PublicKey</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">privateKey</span>.<span style="color:#a6e22e">PublicKey</span>)
+	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">WriteFile</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>, <span style="color:#a6e22e">pub</span>, <span style="color:#ae81ff">0644</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+
+	<span style="color:#a6e22e">prv</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">x509</span>.<span style="color:#a6e22e">MarshalPKCS1PrivateKey</span>(<span style="color:#a6e22e">privateKey</span>)
+	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">WriteFile</span>(<span style="color:#e6db74">&#34;key.prv&#34;</span>, <span style="color:#a6e22e">prv</span>, <span style="color:#ae81ff">0644</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+</pre>
+<p>We also add a cute little <code>printBytes()</code> function to pretty print our public key in a way we can just paste into our client. Note, we also print the bytes when the keys exist because we might want to reprint those.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// util/genkey.go
+</span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;crypto/rand&#34;</span>
+	<span style="color:#e6db74">&#34;crypto/rsa&#34;</span>
+	<span style="color:#e6db74">&#34;crypto/x509&#34;</span>
+	<span style="color:#e6db74">&#34;fmt&#34;</span>
+	<span style="color:#e6db74">&#34;io/ioutil&#34;</span>
+	<span style="color:#e6db74">&#34;log&#34;</span>
+	<span style="color:#e6db74">&#34;os&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span> []<span style="color:#66d9ef">byte</span>) {
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\tpub := []byte{&#34;</span>)
+	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">pub</span> {
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">i</span> &gt; <span style="color:#ae81ff">0</span> {
+			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;,&#34;</span>)
+		}
+
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">i</span><span style="color:#f92672">%</span><span style="color:#ae81ff">8</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> {
+			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n\t\t&#34;</span>)
+		}
+
+		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34; 0x%02x&#34;</span>, <span style="color:#a6e22e">pub</span>[<span style="color:#a6e22e">i</span>])
+	}
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34; }&#34;</span>)
+}
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">errPub</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stat</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>)
+	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">errPrv</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stat</span>(<span style="color:#e6db74">&#34;key.prv&#34;</span>)
+
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">errPub</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">errPrv</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">pub</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+		<span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span>)
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;keypair exists, will not overwrite&#34;</span>)
+	}
+
+	<span style="color:#a6e22e">privateKey</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">GenerateKey</span>(<span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#ae81ff">2048</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+
+	<span style="color:#a6e22e">pub</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">x509</span>.<span style="color:#a6e22e">MarshalPKCS1PublicKey</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">privateKey</span>.<span style="color:#a6e22e">PublicKey</span>)
+	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">WriteFile</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>, <span style="color:#a6e22e">pub</span>, <span style="color:#ae81ff">0644</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+
+	<span style="color:#a6e22e">prv</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">x509</span>.<span style="color:#a6e22e">MarshalPKCS1PrivateKey</span>(<span style="color:#a6e22e">privateKey</span>)
+	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">WriteFile</span>(<span style="color:#e6db74">&#34;key.prv&#34;</span>, <span style="color:#a6e22e">prv</span>, <span style="color:#ae81ff">0644</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+
+	<span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span>)
+}
+</pre>
+<p>Now we run it. I&rsquo;m going to do so in the <code>~/prog/rw/server/</code> directory which doesn&rsquo;t exist yet.</p>
+
+<p>Worry if your&rsquo;s outputs the same key as mine and don&rsquo;t worry about the converse.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ mkdir server
+$ cd server
+$ go run ../util/genkey.go
+	pub :<span style="color:#f92672">=</span> <span style="color:#f92672">[</span><span style="color:#f92672">]</span>byte<span style="color:#f92672">{</span>
+		0x30, 0x82, 0x01, 0x0a, 0x02, 0x82, 0x01, 0x01,
+		0x00, 0xb4, 0x10, 0x46, 0xf7, 0x7e, 0x73, 0x72,
+		0x22, 0x4a, 0xcf, 0x98, 0xc8, 0x60, 0x67, 0x6c,
+		0x96, 0x0b, 0xf9, 0x42, 0x5d, 0x05, 0xbf, 0x99,
+		0x96, 0xe8, 0x69, 0xed, 0x95, 0xa4, 0x95, 0xbb,
+		0xd2, 0x62, 0xa5, 0x35, 0x77, 0x97, 0x19, 0xc7,
+		0x09, 0x92, 0x61, 0xd9, 0x5f, 0xea, 0x3e, 0x49,
+		0xf5, 0x3f, 0x6f, 0x84, 0x21, 0x94, 0xc9, 0xda,
+		0xfd, 0x20, 0x62, 0xc4, 0x61, 0x7c, 0x86, 0xfc,
+		0xd6, 0x1f, 0xc8, 0x35, 0x2a, 0x78, 0xd5, 0x3e,
+		0xb8, 0xd3, 0x3b, 0xa7, 0x3c, 0x9e, 0x82, 0x55,
+		0xe3, 0x5b, 0x5c, 0x82, 0x50, 0xa5, 0x06, 0xf4,
+		0x42, 0xfe, 0x93, 0xad, 0x61, 0x80, 0xff, 0xf2,
+		0x8e, 0xe3, 0x78, 0xcb, 0xec, 0x91, 0x3f, 0x40,
+		0xae, 0x71, 0x1f, 0x50, 0xb3, 0x1c, 0x1e, 0xdc,
+		0x99, 0xed, 0xbb, 0x33, 0xe4, 0x6c, 0xb4, 0x84,
+		0x18, 0x87, 0x51, 0xc7, 0x42, 0x0e, 0xa5, 0x80,
+		0x4c, 0x36, 0xd2, 0xf2, 0x52, 0x58, 0x08, 0x26,
+		0x6c, 0x36, 0x4b, 0x15, 0x22, 0x91, 0xd1, 0x92,
+		0xcb, 0x82, 0x0f, 0xa8, 0x3f, 0xbe, 0x57, 0x2a,
+		0xd0, 0xf2, 0x51, 0xa6, 0x3c, 0x92, 0xb9, 0x00,
+		0x25, 0x23, 0xf4, 0x48, 0xa4, 0x8f, 0x09, 0xb4,
+		0x5f, 0x42, 0x3f, 0x7d, 0x2d, 0xf8, 0xb0, 0x61,
+		0x03, 0xcc, 0x93, 0x29, 0x63, 0x6a, 0xce, 0x1c,
+		0x3f, 0x19, 0x7b, 0x03, 0x13, 0xd2, 0xd9, 0x99,
+		0x85, 0x55, 0x2c, 0xfa, 0x19, 0x92, 0x18, 0x8a,
+		0x39, 0x57, 0x4e, 0x22, 0xa3, 0x39, 0x93, 0xaa,
+		0x5b, 0xaa, 0x2f, 0x2a, 0x41, 0xcb, 0xb6, 0xbc,
+		0xde, 0x29, 0xe1, 0xbf, 0x4b, 0xbb, 0xac, 0x38,
+		0x00, 0x1b, 0x4f, 0xb8, 0x4f, 0x39, 0xf6, 0xb0,
+		0x0d, 0x92, 0x49, 0x0b, 0x60, 0x25, 0x15, 0xd2,
+		0xad, 0xfa, 0x56, 0xb1, 0x0a, 0x94, 0xfc, 0xdc,
+		0x55, 0xb9, 0x52, 0xe6, 0x64, 0x93, 0x85, 0x36,
+		0x23, 0x02, 0x03, 0x01, 0x00, 0x01 <span style="color:#f92672">}</span>
+$ ls 
+key.prv  key.pub
+</pre>
+<h2>Conclusion</h2>
+
+<p>Hopefully now we understand what asymmetric encryption is. We know that RSA has many pitfalls but Go provides some sane defaults as long as you can read. We can also generate the keypair for our server (yay).</p>
+
+<p>In the next post we will get to write our ransomware client (also yay).</p>
+
+<p>Now fuck off and do some exercise in the sun.</p>
+]]></content:encoded>
       <author>tacixat</author>
       <pubDate>Wed, 16 Dec 2020 13:37:00 -0400</pubDate>
     </item>
@@ -17,6 +280,299 @@
       <title>Ransomware in Golang - Part 1</title>
       <link>http://tacix.at/%!s(MISSING).html</link>
       <description>Environment and victim directory setup...</description>
+      <content:encoded><![CDATA[<p>In case you missed it, check out <a href="https://tacix.at/posts/Ransomware%20in%20Golang%20-%20Part%200.html">Part 0</a> which will serve as our design doc and outline while we&rsquo;re building this.</p>
+
+<h2>Setup</h2>
+
+<p>To get started you’ll need to <a href="https://golang.org/dl/">download Go</a> and follow the <a href="https://golang.org/doc/install">install instructions</a> for your operating system. Then you’ll create a directory for this project, I’ll be working out of <code>~/prog/rw/</code> where <code>~</code> is my home directory on whatever OS I’m working on.</p>
+
+<p>Golang is cross platform, and we&rsquo;re not doing anything platform specific, so you&rsquo;re free to work wherever you&rsquo;d like. However, if you&rsquo;re looking to learn some basic skills, now would be a great time to start working with virtual machines!</p>
+
+<p>I&rsquo;ve made some YouTube videos on how to get started with VirtualBox, you can get the links at <a href="https://cybering.cc/#00">cybering.cc</a>. It&rsquo;s super easy, if you can click through two installers, you should have no problem. The videos help through a couple gotchas. So if you&rsquo;re looking to learn about VMs or Linux, both of which are great skills for jobbos, give it a shot! Your malware will then be contained in a VM, as all malware should be.</p>
+
+<h2>Victim Directory</h2>
+
+<p>Since we will be repeatedly running and debugging our encryptor, we will need to set up a victim directory so we’re not encrypting our own data, especially when we do not have a decryptor! This directory should be replaceable so we can reinitialize it with ease. We’ll have a master directory and a clone of it to be our directory under test. This way, restoring should be as simple as deleting the directory under test and replacing it with master.</p>
+
+<p>Let’s make <code>_victim/</code> and seed it with some data. We have a few requirements. We want to have a handful of files that we can check for validity. When you are decrypting there are small things you can mess up, so we want to make sure our files match their originals exactly. Having multiple file types will also help us when we start filtering by extension. A single flat folder will not be realistic, so we will create a directory structure in order to simulate a real file system traversal.</p>
+
+<p>Yours doesn&rsquo;t have to match mine exactly, but here is a good template structure.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">_victim/
+	simple.txt
+	pics/
+		raylan.jpg
+		hello.jpg
+	docs/
+		Resume.pdf
+	prog/
+		main.go
+		main.exe
+</pre>
+<p>The file <code>simple.txt</code> is just a text file that has <code>Hello world!</code> in it. In <code>pics/</code> I have a picture of my dog and another file I found on the internet. The <code>docs/</code> folder contains my resume which I had sitting around.</p>
+
+<p>For the dummy <code>prog/</code> folder, we can use this to test our Golang installation. My <code>main.go</code> file has the following contents.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;fmt&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Greetings from Go!&#34;</span>)
+}
+</pre>
+<p><em>We&rsquo;ll be working a lot from the command line. If you&rsquo;re on Linux the provided terminal is great. On Windows, you could use command prompt, but I generally work from <a href="https://conemu.github.io/">ConEmu</a>. If you want to learn some command line basics, I have some videos <a href="https://cybering.cc/#01">here</a>.</em></p>
+
+<p>Normally, as I&rsquo;m working I just run my Go files with something like <code>go run main.go</code> on the command line. To produce an executable though, we can use <code>go build main.go</code>. On Windows this will produce <code>main.exe</code>, if you are working on Linux (probably OSX too) you will get an exectuable called <code>main</code>, either is fine.</p>
+
+<h2>Restore and Verify</h2>
+
+<p>We&rsquo;re going to create a small utility for restoring our victim directory, and also for verifying that things have been decrypted correctly. Let&rsquo;s make a new directory <code>~/prog/rw/util</code>, then create the file <code>util.go</code> in there.</p>
+
+<h3>Restoration</h3>
+
+<p>Restoration is pretty simple in an OS specific context. On Linux it would simply be <code>rm -r victim</code> and <code>cp -r _victim victim</code>. To reliably copy a directory recursively though, there are a lot of edge cases. Thankfully other people have already done the work on this. We&rsquo;re going to use the package <code>github.com/otiai10/copy</code>.</p>
+
+<p>Since <code>github.com/otiai10/copy</code> is an external package, in order to import it we will need to run <code>go get github.com/otiai10/copy</code> on the command line. That will download the package and store it so we don&rsquo;t get an error like the following when we try to run our util program.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#a6e22e">util</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">util</span>.<span style="color:#66d9ef">go</span>:<span style="color:#ae81ff">5</span>:<span style="color:#ae81ff">2</span>: <span style="color:#a6e22e">cannot</span> <span style="color:#a6e22e">find</span> <span style="color:#f92672">package</span> <span style="color:#e6db74">&#34;github.com/otiai10/copy&#34;</span> <span style="color:#a6e22e">in</span> <span style="color:#a6e22e">any</span> <span style="color:#a6e22e">of</span>:
+        <span style="color:#a6e22e">c</span>:<span style="color:#960050;background-color:#1e0010">\</span><span style="color:#66d9ef">go</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">src</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">github</span>.<span style="color:#a6e22e">com</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">otiai10</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">copy</span> (<span style="color:#a6e22e">from</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">GOROOT</span>)
+        <span style="color:#a6e22e">C</span>:<span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">Users</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">tacixat</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#66d9ef">go</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">src</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">github</span>.<span style="color:#a6e22e">com</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">otiai10</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#a6e22e">copy</span> (<span style="color:#a6e22e">from</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#a6e22e">GOPATH</span>)
+</pre>
+<p>We&rsquo;ll start with this in <code>util.go</code>. Give it a read through and I&rsquo;ll break it down section by section after. You can also try running it with <code>go run util/util.go</code>. Try adding on the flags <code>-verify</code> and <code>-restore</code> to the end of that and seeing how it handles them.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;flag&#34;</span>
+	<span style="color:#e6db74">&#34;github.com/otiai10/copy&#34;</span>
+	<span style="color:#e6db74">&#34;log&#34;</span>
+	<span style="color:#e6db74">&#34;os&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#a6e22e">restore</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(
+		<span style="color:#e6db74">&#34;restore&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;restore victim directory from _victim&#34;</span>)
+	<span style="color:#a6e22e">verify</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(
+		<span style="color:#e6db74">&#34;verify&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;verify files in victim directory&#34;</span>)
+
+	<span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Parse</span>()
+
+	<span style="color:#66d9ef">if</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> <span style="color:#f92672">||</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Requires one of -verify or -restore.&#34;</span>)
+	}
+
+	<span style="color:#66d9ef">if</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> {
+		<span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">RemoveAll</span>(<span style="color:#e6db74">&#34;victim&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+
+		<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">copy</span>.<span style="color:#a6e22e">Copy</span>(<span style="color:#e6db74">&#34;_victim&#34;</span>, <span style="color:#e6db74">&#34;victim&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+	} <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Verify not implemented yet!&#34;</span>)
+	}
+}
+</pre>
+<p>We start by importing a few packages. In Golang the packages should be listed in alphabetical order. You can do this automatically with <code>go fmt util/util.go</code>, which will tidy up other things about the file as well.</p>
+
+<ul>
+<li><a href="https://golang.org/pkg/flag"><code>flag</code></a> - Used for creating command line flags.</li>
+<li><a href="https://pkg.go.dev/github.com/otiai10/copy"><code>github.com/otiai10/copy</code></a> - For copying our <code>_victim/</code> directory to <code>victim/</code>. Very straightforward package, only one function.</li>
+<li><a href="https://golang.org/pkg/log"><code>log</code></a> - We&rsquo;ll use this one for printing instead of <code>fmt</code> and I&rsquo;ll explain the differences below.</li>
+<li><a href="https://golang.org/pkg/os"><code>os</code></a> - Used to delete our current <code>victim/</code> directory, recursively.</li>
+</ul>
+
+<p>In our <code>main()</code> function we start by declaring two flags. The <code>:=</code> operator in Go is a short hand for declaring and defining a variable. This could also be done in two steps, like <code>var restore *Bool</code> and <code>restore = flag.Bool(...)</code> (the <code>*</code> here is saying it is a pointer type). The shorthand is nicer. Remember though, any assignment after declaration would just use <code>=</code>.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">restore</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(
+		<span style="color:#e6db74">&#34;restore&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;restore victim directory from _victim&#34;</span>)
+	<span style="color:#a6e22e">verify</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Bool</span>(
+		<span style="color:#e6db74">&#34;verify&#34;</span>, <span style="color:#66d9ef">false</span>, <span style="color:#e6db74">&#34;verify files in victim directory&#34;</span>)
+</pre>
+<p>These are pointers to booleans. Pointers are an address in memory that holds a value (in this case, a boolean value). In order to access the value, we dereference it with <code>*</code> when accessing the variable.</p>
+
+<p>The next block is checking if either both <code>restore</code> and <code>verify</code> are false or both <code>restore</code> and <code>verify</code> are true. This is effectively an exclusive-or (xor). The <code>&amp;&amp;</code> (and) operator has a higher precendence than <code>||</code> (or). Think order of operations with multiplication and addition. If we either have both true or neither, we&rsquo;re going to call <code>log.Fatal(...)</code> which prints the message and exits the program.</p>
+
+<p>The <code>log</code> package has a very similar API to <code>fmt</code>. The primary difference is that it prints to <code>stderr</code> instead of <code>stdout</code>, so it useful for program-related messages, rather than those meant for the end user. It also has nice utility functions like <code>Fatal</code> so we don&rsquo;t need to call both <code>fmt.Println(...)</code> and <code>sys.Exit(1)</code>.</p>
+
+<p><em>If you need a referesher on boolean logic, check out video <a href="https://cybering.cc/#02">02.04</a>.</em></p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#66d9ef">if</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> !<span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> <span style="color:#f92672">||</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">restore</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Requires one of -verify or -restore.&#34;</span>)
+	}
+</pre>
+<p>If all goes well, and we have run the program with either <code>-verify</code> or <code>-restore</code> then we&rsquo;ll move onto our if statement. Looking at the second part first, we just bail if we call <code>-verify</code> right now. We&rsquo;ll implement that in a minute.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	} <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">verify</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Verify not implemented yet!&#34;</span>)
+	}
+</pre>
+<p>In our restore block we have two actions. The first is calling <code>os.RemoveAll()</code> on our <code>victim/</code> directory. This will recursively delete (meaning, delete the folder, and all of its contents) the current <code>victim/</code> dir. This is great when we have half of our ransomware working and we can encrypt the files but not recover them!</p>
+
+<p>The pattern of <code>err = ...</code> and <code>if err != nil { ... }</code> is the standard pattern in Go for handling errors. This is to replace C-style errors where some functions return 0 for OK, and some return NULL (0) in error cases. Instead we just get an error, and the if the error is defined, we can handle it. In this case we handle it by printing it out and exiting the program. This is fine since we&rsquo;re not expecting to hit these errors very often.</p>
+
+<p>The next block uses the <code>github.com/otiai10/copy</code> package to copy <code>_victim/</code> to <code>victim/</code>. Easy enough. Only thing to note, is see how we declare and define the first <code>err</code> with <code>:=</code> and the second we are just reassigning the existing <code>err</code> variable with <code>=</code>.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">		<span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">RemoveAll</span>(<span style="color:#e6db74">&#34;victim&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+
+		<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">copy</span>.<span style="color:#a6e22e">Copy</span>(<span style="color:#e6db74">&#34;_victim&#34;</span>, <span style="color:#e6db74">&#34;victim&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+</pre>
+<h3>Verification</h3>
+
+<p>Our goal with verification is to walk <code>_victim/</code> (the original) and for each file, <em>verify</em> that its SHA256 hash matches a corresponding file in <code>victim/</code>. There are three components to this.</p>
+
+<ol>
+<li>Reading files to get their bytes.</li>
+<li>Taking the SHA256 of some bytes.</li>
+<li>Walking a directory.</li>
+</ol>
+
+<p>Thankfully, these are all super easy to do. When I&rsquo;m working on projects I&rsquo;ll often have a <code>scratch/</code> directory where I prototype things and figure out how things work. I&rsquo;ll walk you through each of these in short scratch programs. Then we can put them together in <code>util.go</code>.</p>
+
+<h4>Reading a file</h4>
+
+<p>In Go, there are <a href="https://gobyexample.com/reading-files">a lot of ways</a> to read a file. We&rsquo;ll use a wrapper, <code>ioutil</code>, that will open and read the file then just give us back the slice of bytes (<code>bs</code>). We check the error and bail if we have one. Finally we cast our little slice of bytes to a string as we pass it to be printed out.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// scratch/read.go
+</span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;io/ioutil&#34;</span>
+	<span style="color:#e6db74">&#34;log&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#a6e22e">bs</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#e6db74">&#34;victim/simple.txt&#34;</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(string(<span style="color:#a6e22e">bs</span>))
+}
+</pre>
+<h4>Hashing some bytes</h4>
+
+<p>Taking a SHA256 is equally as easy. We import <code>crypto/SHA256</code> and pass in a (string cast to) a slice of bytes to <a href="https://golang.org/pkg/crypto/sha256/#Sum256"><code>sha256.Sum256()</code></a>. That gives us back an array of 32 bytes which contains the hash. We print that as hex, giving us a 64 character string.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// scratch/sha256.go
+</span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;crypto/sha256&#34;</span>
+	<span style="color:#e6db74">&#34;log&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#a6e22e">input</span> <span style="color:#f92672">:=</span> <span style="color:#e6db74">&#34;Let&#39;s take the sha256 of these bytes!&#34;</span>
+	<span style="color:#a6e22e">hash</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sha256</span>.<span style="color:#a6e22e">Sum256</span>([]byte(<span style="color:#a6e22e">input</span>))
+	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;%x\n&#34;</span>, <span style="color:#a6e22e">hash</span>)
+}
+</pre>
+<p>If you&rsquo;re on Linux you can run the following to verify the output. It echos out the same string, <code>-n</code> for no trailing newline to match our input in the program. We pipe that to <code>sha256sum</code> and see that we&rsquo;re getting the same hash.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">echo -n <span style="color:#e6db74">&#34;Let&#39;s take the sha256 of these bytes!&#34;</span> | sha256sum
+</pre>
+<p>If you haven&rsquo;t seen a hashing function before, SHA256 is a cryptographic hash. Cryptographic hashes are meant to take an arbitrary amount of data and map it to a fixed space (e.g. 32 bytes). They are meant to be infeasible to reverse, meaning you should only be able to discover the input that results in a certain hash through brute force. Collisions, while possible, should be rare enough to not be considered. Other hashing algorithms, such as <a href="https://www.mscs.dal.ca/~selinger/md5collision/">MD5</a> and <a href="https://security.googleblog.com/2017/02/announcing-first-sha1-collision.html">SHA1</a> can be manipulated to create collisions. This breaks the hash.</p>
+
+<p>For our purposes, since SHA256 is consistent, the same input should hash to the same output, so we&rsquo;ll use the hashes of two files to see if they are equivalent. This will help check that we are doing things correctly when decrypting.</p>
+
+<h4>Walking a directory</h4>
+
+<p>Finally we get to take a walk down directory lane. This is also super easy because someone has already done the hard work. We don&rsquo;t have to screw around with handling file system edge cases or writing a tree traversal. The <code>filepath</code> package has a <a href="https://golang.org/pkg/path/filepath/#Walk"><code>Walk()</code></a> function. You provide it with a starting directory and a visitor function that you define. The visitor function gets called on each file or directory.</p>
+
+<p>If you check the docs you&rsquo;ll see that the function that <code>Walk()</code> takes as its second argument is of the type <code>WalkFunc</code>. That definition is just below. What it is saying is that you need to pass in a function that matches the <code>WalkFunc</code> prototype.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">WalkFunc</span> <span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">path</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">info</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">FileInfo</span>, <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>) <span style="color:#66d9ef">error</span>
+</pre>
+<p>In our case, this is <code>onVisit()</code>. In the docs you can check out the definition of the <code>os.FileInfo</code> interface, but the important bit is that it has an <code>IsDir()</code> function that returns true when the visitee (<code>path</code>) is a directory. When it is a directory we can ignore it and return early. On files, we&rsquo;ll print them out.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// scratch/walk.go
+</span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
+
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;flag&#34;</span>
+	<span style="color:#e6db74">&#34;log&#34;</span>
+	<span style="color:#e6db74">&#34;path/filepath&#34;</span>
+	<span style="color:#e6db74">&#34;os&#34;</span>
+)
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">onVisit</span>(<span style="color:#a6e22e">path</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">fi</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">FileInfo</span>, <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>) <span style="color:#66d9ef">error</span> {
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">fi</span>.<span style="color:#a6e22e">IsDir</span>() {
+		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
+	}
+	
+	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">path</span>)
+	<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
+}
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#a6e22e">dir</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">String</span>(<span style="color:#e6db74">&#34;dir&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>, <span style="color:#e6db74">&#34;Directory to walk.&#34;</span>)
+	<span style="color:#a6e22e">flag</span>.<span style="color:#a6e22e">Parse</span>()
+
+	<span style="color:#66d9ef">if</span> len(<span style="color:#f92672">*</span><span style="color:#a6e22e">dir</span>) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;Please provide a -dir...&#34;</span>)
+	}
+
+	<span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">filepath</span>.<span style="color:#a6e22e">Walk</span>(<span style="color:#f92672">*</span><span style="color:#a6e22e">dir</span>, <span style="color:#a6e22e">onVisit</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+}
+</pre>
+<p>Give it a run and see how it works. You can also remove the <code>IsDir()</code> check and see it print out the directories too. Fun.</p>
+
+<h4>Putting it all together</h4>
+
+<p>Back in <code>util/util.go</code> we&rsquo;ll update our <code>else if *verify</code> block in <code>main()</code> to contain the following. You&rsquo;ll also need to update your imports of import.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">		<span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">filepath</span>.<span style="color:#a6e22e">Walk</span>(<span style="color:#e6db74">&#34;_victim&#34;</span>, <span style="color:#a6e22e">onVisit</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+		}
+</pre>
+<p>Then the party heads over to the <code>onVisit()</code> function. We read and take the hash of the original. Then we read and take the hash of the copy. Finally we check that they match.</p>
+
+<p>It&rsquo;s all stuff we saw in the last section. We&rsquo;re being tricky with our paths, since we&rsquo;re walking <code>_victim/</code> and checking in on <code>victim/</code> we just need to drop the underscore off the front to get the corresponding file that we are verfiying. That&rsquo;s done with the subslice notation <code>[1:]</code>, going from the first character (the one after the zeroth) to the end.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">onVisit</span>(<span style="color:#a6e22e">path</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">fi</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">FileInfo</span>, <span style="color:#a6e22e">err</span> <span style="color:#66d9ef">error</span>) <span style="color:#66d9ef">error</span> {
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">fi</span>.<span style="color:#a6e22e">IsDir</span>() {
+		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
+	}
+
+	<span style="color:#75715e">// Read original.
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">bsOrig</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#a6e22e">path</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Error reading&#34;</span>, <span style="color:#a6e22e">path</span>)
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
+		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
+	}
+
+	<span style="color:#a6e22e">hashOrig</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sha256</span>.<span style="color:#a6e22e">Sum256</span>(<span style="color:#a6e22e">bsOrig</span>)
+
+	<span style="color:#75715e">// Read copy.
+</span><span style="color:#75715e"></span>	<span style="color:#a6e22e">bsCopy</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#a6e22e">path</span>[<span style="color:#ae81ff">1</span>:])
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Error reading&#34;</span>, <span style="color:#a6e22e">path</span>[<span style="color:#ae81ff">1</span>:])
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
+		<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
+	}
+
+	<span style="color:#a6e22e">hashCopy</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">sha256</span>.<span style="color:#a6e22e">Sum256</span>(<span style="color:#a6e22e">bsCopy</span>)
+
+	<span style="color:#75715e">// Report mismatches.
+</span><span style="color:#75715e"></span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">hashOrig</span> <span style="color:#f92672">!=</span> <span style="color:#a6e22e">hashCopy</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Mismatch for&#34;</span>, <span style="color:#a6e22e">path</span>)
+	}
+
+	<span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
+}
+</pre>
+<p>Give ol&rsquo; <code>util/util.go</code> a run with <code>-verify</code> now and see how it does. It probably won&rsquo;t be too interesting unless you go and edit a file in the clone directory. You can also try deleting a file and see how that gets handled. Afterall, we don&rsquo;t want our ransomware losing people&rsquo;s data all willy nilly.</p>
+
+<h2>Conclusion</h2>
+
+<p>We have a decent setup for restoring our <code>victim/</code> directory now, we can also check that the files line up between the original and the copy.</p>
+
+<p>Up next in the series we&rsquo;ll get to generating our server keypair, and we&rsquo;ll write a couple scratch programs to understand how to use the encryption packages. That will set us up nicely to write the encryptor in Part 3.</p>
+
+<p>Keep on hacking on!</p>
+]]></content:encoded>
       <author>tacixat</author>
       <pubDate>Mon, 09 Nov 2020 13:37:00 -0400</pubDate>
     </item>
@@ -24,6 +580,98 @@
       <title>Ransomware in Golang - Part 0</title>
       <link>http://tacix.at/%!s(MISSING).html</link>
       <description>Go ransomware design document...</description>
+      <content:encoded><![CDATA[<h2>Summary</h2>
+
+<p>We’re going to build some ransomware. This document covers the high level design and a few details to get us started. We’ll be using an asymmetric + symmetric encryption scheme for locking files. We’ll also build a server for handling decryption. All of this will be written in Go, so it will be cross platform. Our malware will show off Go’s great parallelization and networking capabilities. From there we’ll get into the technical details and start looking at anti-analysis tricks and signature writing. I’ll take you through everything step by step.</p>
+
+<h2>Design</h2>
+
+<h3>Encryptor</h3>
+
+<p>The encryptor is the malware sample that gets dropped on the victim’s computer. It will use a common asymmetric + symmetric encryption scheme for encrypting files. It will walk directories, visiting each file. It will selectively target certain files based on mimetype, extension, or size.
+Encryption Scheme</p>
+
+<p>The server will have an asymmetric keypair (e.g. RSA). The server private key will be kept private on the server. The server public key will be embedded in the encryptor client. When the client runs it will generate a client keypair and encrypt the private key with the server’s public key. For each file, it will generate a random symmetric key (e.g. AES). That file key will be used to encrypt the file contents, then that key will be encrypted with the client’s public key and stored. We will also store the IV and number of padding bytes for each file.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">EncryptionInfo</span> <span style="color:#66d9ef">struct</span> {
+	<span style="color:#a6e22e">Path</span>    <span style="color:#66d9ef">string</span>
+	<span style="color:#a6e22e">Padding</span> <span style="color:#66d9ef">uint8</span>
+	<span style="color:#a6e22e">Key</span>     []<span style="color:#66d9ef">byte</span>
+	<span style="color:#a6e22e">Iv</span>      []<span style="color:#66d9ef">byte</span>
+} 
+</pre>
+<p>This allows the server to unlock a machine by decrypting the single client private key. That client key and be used to decrypt each file key, and each file key, in turn, can be used to decrypt its respective file.</p>
+
+<h3>File Walking</h3>
+
+<p>This will be incredibly simple. The Go package path/filepath includes a method Walk. We’ll implement the visitor function to handle each file. This is where we can add filtering to not target files that are too large or an unknown file type. For detecting file types we will either use mimetype or http.DetectContentType.
+Server</p>
+
+<p>The server will be a standard HTTP server in Golang. These are super easy to write. We’ll look at HTML templating for the front-end portion of the site. This will have a few support methods for the client.</p>
+
+<p>While the client won’t always have a network connection, when it does we will upload the encrypted key to the server to save the user from having to. For this we’ll have some endpoint like /storeKey. The front-end will need an endpoint to trigger decryption, something like /decrypt, where it can post the user’s key file (or the simple code in place of the file) and get back the decryptor.</p>
+
+<h2>Milestones</h2>
+
+<h3>Environment</h3>
+
+<p>This is where we will get set up. Right now I think it will just be installing Go, which is incredibly straight forward. You will also learn about the project layout and any other information that will be helpful pre-code.</p>
+
+<h3>Victim directory setup</h3>
+
+<p>I’ll be working on the computer I use daily as I’m sure many of you will too. Since we do not want to be encrypting our disks before we have written a decryptor, we’ll write a program to set up a victim directory. If the directory currently exists it will remove it, then it will copy in a directory structure we have established elsewhere on disk. We’ll be running our encryptor repeatedly while debugging it, this will allow an easy set up and tear down of the test directory.</p>
+
+<h3>Key generator</h3>
+
+<p>Following the <a href="https://medium.com/@tarcisioma/ransomware-encryption-techniques-696531d07bb9">standard ransomware encryption scheme</a>, we’ll need a master key pair for the server to use. We’ll dive more into encryption later, but the short of it is we will be using AES (symmetric) to encrypt the files, we’ll encrypt those keys with an asymmetric client keypair. The private key of the client keypair will be encrypted by the server keypair’s public key. In this milestone we will write a program that generates the server keypair, saves it to disk, and prints out the public key in a code-friendly format for our encryptor client.</p>
+
+<h3>Encryptor</h3>
+
+<p>We finally get to write our ransomware client! Here we’ll start with building blocks of the client, such as asymmetric and symmetric cryptography and walking a directory structure. Then we will combine these pieces into a simple but functional prototype that will get refined throughout the rest of the series.</p>
+
+<h3>Server and key decryption</h3>
+
+<p>The encryptor needs a server that takes payment (ours won’t, see: Not Covered) and returns a decrypted client key. Here we’ll learn about writing web servers in Go and HTML templating. Rather than running a separate application like Apache, we can get a webserver up and running with just Go code. We will then expand on this for better usability. For example, most users will not have the technical skills to find and upload the key file, so our encryptor client should do it for them when it has network connectivity.</p>
+
+<h3>File decryption</h3>
+
+<p>Since you have the encryptor written, this should be fairly straight forward. We just need to flip the encryption methods to be decryption methods using the same directory walking. Once this is done you’ll have an end-to-end functional prototype. Another usability improvement will be to patch the decrypted key into a pre-built decryptor. This way the user does not need to manage two separate files.</p>
+
+<h3>Anti-analysis</h3>
+
+<p>A lot of anti-analysis techniques are OS specific. Since we are building cross-platform malware there is a limit to what can be implemented. What is possible is process enumeration. Malware tends to check for known analysis programs (debuggers, network capturing tools, etc.) and can either decide to kill them, not run, or do something else entirely. We’ll explore a few of these options.</p>
+
+<p>Another anti-analysis option we have in Go is to do timing checks. If the process is being stepped through in a debugger, the execution will be much slower than it normally would. We can capture a start time then an end time at some other point and check that the difference is within some threshold of our normal measurement.</p>
+
+<h3>Parsing debug information</h3>
+
+<p>Next we will take an analysis point of view and see how much information we can recover form our Go binary. We will explore the debug information and the executable file format (either ELF or PE) by reimplementing the work done in this awesome blog post. We’ll also explore ways to ruin these helpful debug hints.</p>
+
+<h3>Signature coverage</h3>
+
+<p>In this milestone we will take a defensive posture by writing ClamAV and YARA signatures for our ransomware. We will start by looking at hash based signatures and see why they suck. Next we’ll move onto real signature writing strategies, getting byte based coverage.</p>
+
+<h2>Not Covered (yet)</h2>
+
+<h3>Accepting payments</h3>
+
+<p>Payments aren’t covered for 2 reasons. The first being I don’t want to provide some ready-to-go malware package for people to ruin their lives with. The other is that it is actually a pretty large topic that I’ll cover in the future when we set up a darknet e-commerce shop.</p>
+
+<h3>OS specific techniques</h3>
+
+<p>A lot of anti-analysis techniques are OS specific. We won’t be covering those here. We’ll work on some OS specific implants at a way later date. Right now we’re going to skip manually loading our libraries and injecting into other processes. This allows our malware to be cross platform, which is great since 2020 is the year of the Linux desktop.</p>
+
+<h3>Opsec</h3>
+
+<p>Opsec is antithetical to operational efficiency. We’d spend much more time on protecting our anonymity than writing this ransomware. We don’t need to spend $50 dollars on a burner, worry about buying our hosting services with untraceable Bitcoin, or figure out how to bootstrap an email account over Tor so you can purchase a VPN. I’ve written about some orthogonal topics it in the past and it’s not easy.</p>
+
+<h3>Infection</h3>
+
+<p>My dad got infected with Sigma ransomware from a response to his Craigslist casual encounters post (jk, it was a job ad). Word documents with macros are a common infection vector. In the same spirit of not providing a fully weaponized system, that will not be covered in this series.</p>
+
+<h2>Conclusion</h2>
+
+<p>This should be really fun. I’ve had fun prototyping it and you’ll have a blast and learn a lot running through it. I also have a ton of great topics planned once we’re done.</p>
+]]></content:encoded>
       <author>tacixat</author>
       <pubDate>Fri, 06 Nov 2020 13:37:00 -0400</pubDate>
     </item>
@@ -31,6 +679,148 @@
       <title>Writing my own static site generator</title>
       <link>http://tacix.at/%!s(MISSING).html</link>
       <description>Writing a simple static site generate in Golang to avoid learning Jekyll...</description>
+      <content:encoded><![CDATA[<h2>Introduction</h2>
+
+<p>Hey, first post! I wanted to set up a blog to track the things that I work on. I figured you can&rsquo;t beat free, so I set up GitHub Pages. Jekyll is the default for Pages, so I dove in to check it out. I could not really figure out a minimal example. Do I just clone in an entire theme to my repo and start working from there? What are all these directories? I need to install Ruby? Figured I could write one in ~100 lines of code, so I set off.</p>
+
+<h2>Golang</h2>
+
+<p>I ended up clocking in about ~150 lines for my main file, which I thought would be the heart of the code. The main idea is loop over some markdown posts, md -&gt; html using <a href="https://github.com/russross/blackfriday">Blackfriday</a>, then generate the index from the posts.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#a6e22e">id</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">IndexData</span>{
+		<span style="color:#a6e22e">Posts</span>: []<span style="color:#a6e22e">PostData</span>{},
+	}
+
+	<span style="color:#a6e22e">genPosts</span>(<span style="color:#a6e22e">id</span>)
+
+	<span style="color:#a6e22e">writeTemplate</span>(
+		[]<span style="color:#66d9ef">string</span>{
+			<span style="color:#e6db74">&#34;_templates/index.gohtml&#34;</span>,
+			<span style="color:#e6db74">&#34;_templates/base.gohtml&#34;</span>,
+		}, <span style="color:#e6db74">&#34;index.html&#34;</span>, <span style="color:#a6e22e">id</span>)
+
+	<span style="color:#a6e22e">genAbout</span>()
+}
+</pre>
+<p>Since the heart of things is the <code>genPosts</code> function, we&rsquo;ll look at that. The first block is listing out the markdown files in the <code>_posts</code> folder. Then we kick it off looping over those and generating an HTML file for each.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#a6e22e">files</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadDir</span>(<span style="color:#e6db74">&#34;_posts&#34;</span>)
+<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+	<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+}
+
+<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">f</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">files</span> {
+	<span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>}
+</pre>
+<p>In our for loop, the first step is reading the file in, which is pretty straight forward Go code.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">md</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#e6db74">&#34;_posts/&#34;</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">f</span>.<span style="color:#a6e22e">Name</span>())
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
+		<span style="color:#66d9ef">continue</span>
+	}
+</pre>
+<p>Now I jumped right into rendering the markdown using Blackfriday and I kept getting awful parser errors. I was seriously wondering how such a buggy repo could have so many stars! It was user error though. I&rsquo;m on a Windows host, and the <code>\r\n</code> is apparently not handled by Blackfriday! This was the most time consuming thing of the project. That gives us this beautiful function which is just a <code>bytes.Replace()</code>.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">md</span> = <span style="color:#a6e22e">windowsBad</span>(<span style="color:#a6e22e">md</span>)
+</pre>
+<p>In my review of SSGs I noticed they all had some metadata at the top of the file. This is called <em>Front Matter</em>. It seemed simple enough, you have some JSON, YAML, or TOML followed by a delimeter. I chose TOML since I had never used it before. I have a strange affinity for JSON but it is kinda a pain to write. I chose the delimiter <code>---</code>.</p>
+
+<p>Simply split on that, grab the chunk before and treat it as TOML, rejoin the chunk after and treat it as markdown.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">s</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">bytes</span>.<span style="color:#a6e22e">Split</span>(<span style="color:#a6e22e">md</span>, []byte(<span style="color:#e6db74">&#34;\n---\n&#34;</span>))
+	<span style="color:#66d9ef">if</span> len(<span style="color:#a6e22e">s</span>) &lt; <span style="color:#ae81ff">2</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Missing post metadata.&#34;</span>)
+		<span style="color:#66d9ef">continue</span>
+	}
+	<span style="color:#a6e22e">md</span> = <span style="color:#a6e22e">bytes</span>.<span style="color:#a6e22e">Join</span>(<span style="color:#a6e22e">s</span>[<span style="color:#ae81ff">1</span>:], []byte(<span style="color:#e6db74">&#34;\n---\n&#34;</span>))
+
+	<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">pd</span> <span style="color:#a6e22e">PostData</span>
+	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">toml</span>.<span style="color:#a6e22e">Decode</span>(string(<span style="color:#a6e22e">s</span>[<span style="color:#ae81ff">0</span>]), <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">pd</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#a6e22e">err</span>)
+		<span style="color:#66d9ef">continue</span>
+	}
+</pre>
+<p>The TOML reads right into the <code>PostData</code> struct. We have a post title and a date. The tags aren&rsquo;t used right now, but it should be easy enough to whip up some JS for filtering, or individual pages for each tag. The field <code>Raw</code> is where the markdown rendered to HTML goes.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">PostData</span> <span style="color:#66d9ef">struct</span> {
+	<span style="color:#a6e22e">Title</span> <span style="color:#66d9ef">string</span>
+	<span style="color:#a6e22e">Tags</span>  []<span style="color:#66d9ef">string</span>
+	<span style="color:#a6e22e">Date</span>  <span style="color:#a6e22e">time</span>.<span style="color:#a6e22e">Time</span>
+	<span style="color:#a6e22e">Raw</span>   <span style="color:#a6e22e">template</span>.<span style="color:#a6e22e">HTML</span>
+}
+</pre>
+<p>After that we render and pass <code>PostData</code> to our templates. Then we append the post to the <code>IndexData</code> structure we passed in so we can go back and write out the index.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">cr</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">NewChromaRenderer</span>(
+		<span style="color:#a6e22e">ChromaOptions</span>(<span style="color:#a6e22e">html</span>.<span style="color:#a6e22e">TabWidth</span>(<span style="color:#ae81ff">4</span>)))
+	<span style="color:#a6e22e">pd</span>.<span style="color:#a6e22e">Raw</span> = <span style="color:#a6e22e">template</span>.<span style="color:#a6e22e">HTML</span>(<span style="color:#a6e22e">blackfriday</span>.<span style="color:#a6e22e">Run</span>(
+		<span style="color:#a6e22e">md</span>, <span style="color:#a6e22e">blackfriday</span>.<span style="color:#a6e22e">WithRenderer</span>(<span style="color:#a6e22e">cr</span>)))
+	<span style="color:#a6e22e">writeTemplate</span>(
+		[]<span style="color:#66d9ef">string</span>{
+			<span style="color:#e6db74">&#34;_templates/post.gohtml&#34;</span>,
+			<span style="color:#e6db74">&#34;_templates/base.gohtml&#34;</span>,
+		}, <span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Sprintf</span>(<span style="color:#e6db74">&#34;posts/%s.html&#34;</span>, <span style="color:#a6e22e">pd</span>.<span style="color:#a6e22e">Title</span>), <span style="color:#a6e22e">pd</span>)
+	<span style="color:#a6e22e">id</span>.<span style="color:#a6e22e">Posts</span> = append(<span style="color:#a6e22e">id</span>.<span style="color:#a6e22e">Posts</span>, <span style="color:#a6e22e">pd</span>)
+</pre>
+<p>The function <code>writeTemplate</code> is just a convenience wrapper I made for executing templates then writing them to a file. Now that I&rsquo;m writing this I see I should probably check the error that it returns.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">writeTemplate</span>(<span style="color:#a6e22e">t</span> []<span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">o</span> <span style="color:#66d9ef">string</span>, <span style="color:#a6e22e">d</span> <span style="color:#66d9ef">interface</span>{}) <span style="color:#66d9ef">error</span> {
+	<span style="color:#a6e22e">it</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">template</span>.<span style="color:#a6e22e">ParseFiles</span>(<span style="color:#a6e22e">t</span><span style="color:#f92672">...</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">err</span>
+	}
+
+	<span style="color:#a6e22e">f</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Create</span>(<span style="color:#a6e22e">o</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">err</span>
+	}
+	<span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">f</span>.<span style="color:#a6e22e">Close</span>()
+
+	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">it</span>.<span style="color:#a6e22e">ExecuteTemplate</span>(<span style="color:#a6e22e">f</span>, <span style="color:#e6db74">&#34;base.gohtml&#34;</span>, <span style="color:#a6e22e">d</span>)
+}
+</pre>
+<p>I skipped over the <code>NewChromaRenderer</code> above. There is a really nice library called <a href="https://github.com/Depado/bfchroma">bfchroma</a> that adds syntax highlighting support to Blackfriday (amazing!). It doesn&rsquo;t load though.</p>
+
+<p>Blackfriday got cute with their packaging and are hosting it on <code>gopkg.in</code>. I had not really seen this before, but it seems like it knocked a lot of things out of sync. Some places are importing <code>github.com/russross/blackfriday/v2</code>. The repo tells you to <code>go get gopkg.in/russross/blackfriday.v2</code> though, and import that same URL. When installing bfchroma you can an error that it can&rsquo;t find that <code>github.com</code> URL.</p>
+
+<p>I tried forking the repo and swapping out all the URLs for the <code>gopkg.in</code> one, but something with the module wanted to store it there but import from <code>github.com</code>. It was a mess, I don&rsquo;t know if it was on my end or the packages&rsquo;. I just ended up grabbing the one file from <code>bfchroma</code>, doing some small modifications, and hosting it in this repo.</p>
+
+<h2>Templates</h2>
+
+<p>I learned a bit in this project, one of the things I had never touched before was nesting Go templates. I created a base template for the whole site, then define a few sub templates that get jammed in there. The following is out of <code>base.gohtml</code>.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;<span style="color:#f92672">body</span>&gt;
+  &lt;<span style="color:#f92672">header</span>&gt;
+    &lt;<span style="color:#f92672">span</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">title</span>&gt;&lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">/</span>&gt;TACIX.AT&lt;/<span style="color:#f92672">a</span>&gt;&lt;/<span style="color:#f92672">span</span>&gt;
+    &lt;<span style="color:#f92672">span</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">about</span>&gt;&lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">/about</span>&gt;About&lt;/<span style="color:#f92672">a</span>&gt;&lt;/<span style="color:#f92672">span</span>&gt;
+  &lt;/<span style="color:#f92672">header</span>&gt;
+
+  &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">main</span>&gt;
+  <span style="color:#75715e">{{</span> <span style="color:#66d9ef">template</span> <span style="color:#e6db74">&#34;main&#34;</span> <span style="color:#a6e22e">.</span> <span style="color:#75715e">}}</span>
+  &lt;/<span style="color:#f92672">div</span>&gt;
+
+  &lt;<span style="color:#f92672">footer</span>&gt;
+  &lt;/<span style="color:#f92672">footer</span>&gt;
+&lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
+</pre>
+<p>Then in the specific template, e.g. <code>index.gohtml</code> we can just define <code>main</code>.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">{{</span> <span style="color:#a6e22e">define</span> <span style="color:#e6db74">&#34;main&#34;</span> <span style="color:#75715e">}}</span>
+  <span style="color:#75715e">{{</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">$p</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">.Posts</span> <span style="color:#75715e">}}</span>
+    &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">entry</span>&gt;
+      &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">date</span>&gt;<span style="color:#75715e">{{</span> <span style="color:#a6e22e">$p</span><span style="color:#a6e22e">.Datef</span> <span style="color:#75715e">}}</span>&lt;/<span style="color:#f92672">div</span>&gt;
+      &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">post</span>&gt;
+      	&lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/posts/</span><span style="color:#75715e">{{</span> <span style="color:#a6e22e">$p</span><span style="color:#a6e22e">.Title</span> <span style="color:#75715e">}}</span><span style="color:#e6db74">.html&#34;</span>&gt;<span style="color:#75715e">{{</span> <span style="color:#a6e22e">$p</span><span style="color:#a6e22e">.Title</span> <span style="color:#75715e">}}</span>&lt;/<span style="color:#f92672">a</span>&gt;
+      &lt;/<span style="color:#f92672">div</span>&gt;
+    &lt;/<span style="color:#f92672">div</span>&gt;
+  <span style="color:#75715e">{{</span> <span style="color:#66d9ef">end</span> <span style="color:#75715e">}}</span>
+<span style="color:#75715e">{{</span> <span style="color:#66d9ef">end</span> <span style="color:#75715e">}}</span>
+</pre>
+<p>The <code>writeTemplate</code> function above handles loading multiple templates and then executing from <code>base.gohtml</code>. Neat! I also have one for injecting CSS. In the future when I make some more interactive blogs I will add one for JavaScript.</p>
+
+<h2>Conclusion</h2>
+
+<p>This took me about a day of programming with a nice break in the middle to take the dog to the dog park with the girlfriend and see the bats in Austin. I really feel setting up a standard static site generator would have taken as long. The base code is easy enough, the big time sink was styling the blog! I think that is the win with existing SSGs, having prebuilt themes. I shouldn&rsquo;t lie to myself though, I would have definitely taken as long tweaking a prebuilt theme as I did doing my own.</p>
+
+<p>I do like doing things this way. This gives me a base to build future projects off of. I have a static site generator now that I fully understand and can easily add features to. A thought that came to mind with this, it would be pretty easy to take this tech and make a technical-focused markdown-based blogging site. Now if I ever want to build that up, I have a great starting point.</p>
+
+<p>All the <a href="https://github.com/TACIXAT/tacixat.github.io">code</a> is public so feel free to take a look! The Go code is in <code>_sssg</code> (the extra <code>s</code> was for <em>simple</em>).</p>
+]]></content:encoded>
       <author>tacixat</author>
       <pubDate>Mon, 18 May 2020 13:37:00 -0400</pubDate>
     </item>

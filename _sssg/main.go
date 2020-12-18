@@ -149,15 +149,15 @@ func genRss(id *IndexData) {
 	}
 
 	for _, p := range id.Posts {
-		fmt.Println(p.Meta.Title)
-		fmt.Println(p.Meta.Description)
 		link := fmt.Sprintf("http://tacix.at/%s.html")
+
 		feed.Items = append(feed.Items, &feeds.Item{
 			Title: p.Meta.Title,
 			Link: &feeds.Link{Href: link},
 			Description: p.Meta.Description,
 			Author: &feeds.Author{Name: "tacixat"},
 			Created: p.Date,
+			Content: string(p.Raw),
 		})
 	}
 
