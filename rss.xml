@@ -5,7 +5,228 @@
     <description>Personal projects in programming and the dark arts..</description>
     <managingEditor> (Taci Xat)</managingEditor>
     <pubDate>Mon, 18 May 2020 12:18:00 -0700</pubDate>
-    <lastBuildDate>Thu, 17 Dec 2020 19:39:42 -0800</lastBuildDate>
+    <lastBuildDate>Mon, 03 May 2021 14:25:51 -0700</lastBuildDate>
+    <item>
+      <title>Killington - The Next Decade</title>
+      <link>https://tacix.at/posts/Killington - The Next Decade.html</link>
+      <description>Wild predictions about the future and some suggestions for how to address them.</description>
+      <content:encoded><![CDATA[<p>This post assumes you understand that we are in a long term, low interest rate environment, as well as the unsustainability of <a href="https://en.wikipedia.org/wiki/Triffin_dilemma">being the world&rsquo;s reserve currency</a>. If you are not familiar with these concepts, please review the appendices at the end of the document.</p>
+
+<h2>An Expansionary Period, Goals and Outcomes</h2>
+
+<p>The low interest rates combined with a weaker dollar will create an environment primed for US domestic capability. We can take advantage of this time to benefit the manufacturing base in the United States. This group of workers has been canabalized by the US consistently running trade deficits. We are at a position in the cycle to correct this.</p>
+
+<!-- Additionally, we can position ourselves as the leaders in privacy. Public and private interests working to ensure the right to privacy for our citizens as well as a matter of foreign policy. This begins derisks the current hoards of data on Americans, while also making it patently clear how other govenrments spy on their countrymen. -->
+
+<p>Now is the time to differentiate ourselves, on the world stage, in both software and hardware products. We can go kicking and screaming into the next 10 years, desperately filing sanctions to protect American businesses and the petrodollar, or alternatively, we can change the game that everyone is playing.</p>
+
+<h3>On-Shoring</h3>
+
+<p>Low interest rates and a weak dollar will allow the US to compete internationally on manufacturing. Rather than having a single region be the manufacturing hub of the entire world, and another region be the primary customer, we can bring that capability home and have the end-to-end pipeline within the United States and its neighbors.</p>
+
+<p>This will enable us to on-shore capabilities that were previously unsustainable. This affects the software and hardware supply chain, which is an area that the US can strongly differentiate itself in.</p>
+
+<p>Imagine a situation, such as a kinetic engagement, that caused trade to be cut off from a major manufacturing hub. The number of devices that we have limited to no capability to produce domestically, or even regionally, is astounding. The current environment allows us the opportunity to on-shore these capabilities and create sustainable ecosystems, however we must be willing to foster this.</p>
+
+<h3>Data De-risking</h3>
+
+<p>Data is extremely valuable. A mind numbing amount is collected about us daily. Where we go, who we are with, our interests, preferences, shopping habits, and financials - all are collected and sold by third parties. Online advertising is the primary driver of this collection. While a massive industry, the efficacy in deploying this data is questionable. [TODO CITATION]()</p>
+
+<p>On the other hand, it is a massive security risk for private citizens as well as public interests. China used collected and stolen data in order to discover <a href="https://foreignpolicy.com/2020/12/21/china-stolen-us-data-exposed-cia-operatives-spy-networks/#">CIA agents</a> operating internationally. Data like this has been consistently lost through; the OPM hack, the Experian hack, the [TODO OTHER HIGH PROFILE HACKS].</p>
+
+<p>Data collection is a liability and we must de-risk in this area. If an entity wishes to collect and store data on an individual, we need tight restrictions on its use and severe punishment for its loss. The individual should have a say in their data.</p>
+
+<p>(Anecdote if appropriate: My address history is available online. I have never publicly posted these addresses online. Through some dataset, possibly voting records, credit reporting agencies, or the DMV, all of these are now publicly posted online. This is dangerous for individuals, especially those from vulnerable groups. This information can be used to SWAT people, stalk them, harass them, and provides a springboard to blackmail them.)</p>
+
+<p>(Further if appropriate: Cell phone providers sell our location data in real time. Fuck them too.)</p>
+
+<h3>Offensive Capabilities</h3>
+
+<p>The United States of America leaves a lot of low hanging cyber capabilities shelved. While other countries actively engage in credential phishing, simple document macro attacks, and even Paypal and cryptocurrency scams, the US ignores these avenues of attack.</p>
+
+<p>During capture the flag competitions, teams engage in the practice of chaffing. This is sending large amounts of noise across the shared network, such that another team recording packet captures will have a hard time sifting through that noise to discover the actual exploits being thrown. Cyber policy should take a similar approach. Raise the noise floor with low effort, high impact attacks in order to help mask the more rare high effort, high impact attacks.</p>
+
+<p>These capabilities do not need to originate from the federal government. We simply need to promote and protect individuals who perform these attacks against adversaries, their industries, and citizens. In the same sense that email spam filtering is a growing 800 million dollar industry while no one is making near comparable investment addressing application level, protocol level, or system level design flaws, we want our adversaries to be as hopelessly prioritized. We can achieve this by creating problems for them.</p>
+
+<p><a href="https://www.globenewswire.com/news-release/2019/02/18/1733713/0/en/Global-Enterprise-Spam-Filter-Market-Will-Reach-USD-2-675-Million-By-2026-Zion-Market-Research.html">Citation TODO is this reputable at all?</a></p>
+
+<h3>Payments Infrastructure</h3>
+
+<p>A major impediment to innovation is our current payment infrastructure. We have reached a digital age where we can move data near instantly at minimal cost, however, we have no way to pay a commensurate value for this data. Our online payment options are either embarassingly slow, or charge an effective 3% tax on any transaction. These also include minimum fees to make moving cents, not to mention fractions of a cent, infeasible.</p>
+
+<p>This means that our digital economy is built off of advertising. This infrastructure allows digital properties to be <a href="https://www.investopedia.com/terms/c/cpm.asp">paid per 1000 views</a>. It effectively creates microtransactions, but at the cost of our attention and privacy.</p>
+
+<p>We need a payments infrastructure that enables low fee, instant transactions. The <a href="https://www.frbservices.org/financial-services/fednow/index.html">FedNow</a> project could be this solution. A solution in this space will enable a true digital economy that removes advertisers as the brokers of all transactions and improves citizen privacy.</p>
+
+<p>This will also greatly benefit brick and mortar businesses who are, on every transaction, effectively being charged a 1.3% tax that is paid to the banks and credit card processing companies. <a href="https://www.fool.com/the-ascent/research/average-credit-card-processing-fees-costs-america/">Citation TODO</a></p>
+
+<h3>R&amp;D</h3>
+
+<p>Increase funding in research and development.</p>
+
+<p>An increased focus on transitioning research into products must be made. We should focus on projects that close a small research gap and lean heavily on development.</p>
+
+<h3>New Infrastructure</h3>
+
+<p>[](<a href="https://www.brookings.edu/on-the-record/defending-cyber-dominance/">https://www.brookings.edu/on-the-record/defending-cyber-dominance/</a>)</p>
+
+<p>The Department of Defense understands the importance of a domestic supply chain. There are projects in the DoD that rely on foreign components. Previously we discussed the possibility of events which cut off this supply chain, but we also must consider the attacks which could be staged by an adversary with this level of control. This could mean faulty parts, adversarially planned obsolescence, or even hardware-based backdoors.</p>
+
+<p>We are making effort here. Intel and TSMC are separately creating fabs in Arizona. Recently the DoD has launched an initiative to incentivize domestic chip manufacturing capabilities. This is critical infrastructure and should be prioritized as such.</p>
+
+<p>We also have the opportunity to reduce attack surfaces at this time. While general purpose computing has revolutionized blah blah blah [TODO], it also creates an unmanagable mess. Understanding and managing the security of both the hardware and software stack is nigh untennable. Considering physical and remote attacks, part obsolescence, software aging, known and unknown vulnerabilities, and memory unsafe languages, our devices, infrastructure, and applications are rotting from their core.</p>
+
+<p>We can reduce this attack surface significantly by making purpose built devices, operating systems, and applications. We should not be hobbling together whatever works in order to ship applications that bleed data. We should have low-level developers who understand their stacks such that they can build a system with the capabilities it needs and no more.</p>
+
+<p>Additionally, security engineering could reform as a serious engineering discipline. In the same sense that we can provide tolerances for bridges, we should be able to provide assurances in the entire software supply chain.</p>
+
+<h2>Policy</h2>
+
+<p>Follows are laws and policy considerations for acheiving the above goals, as well as positioning the United States for a prosperous decade.</p>
+
+<h3>Right to Privacy - The 28th Amendment</h3>
+
+<p><em>Citizens shall have the right to control their personal information, from it being posted publically, collected, sold, or transferred.</em></p>
+
+<p>An ammendment should be added to the constitution that guarantees the people&rsquo;s right to privacy.</p>
+
+<h3>Cyber Letters of Marque and Reprisal (LOMAR-C)</h3>
+
+<p>Throughout much of history, privateers were issued authorizations to attack and capture enemy vessels with which their issuing nation was at war. These authorizations laid out territories and rules of engagement for operations on the high seas. The same stance should be taken for cyber operations in order to acheive the goals outlined in Offsensive Capabilities.</p>
+
+<p>These letters could define the nations to target, the goals for operations, and the prize law in the case of incentivized operations.</p>
+
+<p>[](<a href="https://www.cyberlunarium.org/2020/06/cyber-lunarium-commission-001-case-for.html">https://www.cyberlunarium.org/2020/06/cyber-lunarium-commission-001-case-for.html</a>)</p>
+
+<p>[](<a href="https://www.cyberlunarium.org/2020/07/clc004-and-reprisal.html">https://www.cyberlunarium.org/2020/07/clc004-and-reprisal.html</a>)</p>
+
+<h3>Visible Cyber Retaliation</h3>
+
+<p>With the letter of marque and reprisal system the United States will be able to visibly retaliate against cyber attacks, without burning valuable DoD capabilities. For example, the recent North Korean attacks against security researchers do not justify a government response. With the infrastructure of low tier capability, a response could be made simply by dictating attack direction.</p>
+
+<p>[](<a href="https://blog.google/threat-analysis-group/new-campaign-targeting-security-researchers/">https://blog.google/threat-analysis-group/new-campaign-targeting-security-researchers/</a>)</p>
+
+<h3>Right to Repair Laws</h3>
+
+<p>(TODO: refine argument so this isn&rsquo;t calling for a regression from ICs)</p>
+
+<p>In rebuilding our manufacturing base and promoting domestic capability, right to repair is essential. Currently, devices are systemizing as black box systems. In purchasing replacement car parts, you&rsquo;re no longer buying individual parts, but a collection of parts (TODO: lookup the industry word for this). Similarly for phones, they are largely unopenable, and the circuit boards are undocumented and difficult to modify. Appliances, such as washing machines are no longer a collection of parts, but a computer that is replaced at a considerably higher cost.</p>
+
+<p>With no documentation for repair, this locks in manufacturing and guarantees a sale to the manufacturing hub. Repair captures the work domestically. It also improves the domestic knowledge base around technical matters.</p>
+
+<h3>Software Assurance Measurements and Standards</h3>
+
+<p>.</p>
+
+<h3>Zero Tolerance on Corporate Weakness to Chinese Soft Power</h3>
+
+<p>.</p>
+
+<h3>Strategically Deploying Sanctions</h3>
+
+<p>.</p>
+
+<h3>Imigration</h3>
+
+<p>Our primary objective is to maintain demand for US citizenship.</p>
+
+<p>Increase immigration to meet the demands of the labor pool in this expansionary phase. This not only helps meet the demand in the cyber talent pool, but will free up citizens for advanced research positions.</p>
+
+<p>In order for US citizens to have a comfortable retirement, they must own assets, and there must be demand for those assets. Given that we do not have enough babies to create this demand domestically, we should all be in favor of immigration. This will increase demand for our assets and ensure a comfortable retirement.</p>
+
+<h3>Education</h3>
+
+<p>An expansionary phase will create a demand for talent. To get the talent that we require, we need to lower the costs of education. This will allow more people to pursue advanced degrees, but it will also free them up to form their own companies after graduation and address economic needs, rather than chasing the highest ad-tech salary they can find.</p>
+
+<p>Considering a paradigm shift in security engineering, we will need to work with universities to prepare students for this level of work. This will mean funding clubs, guiding the curriculum, and setting standards.</p>
+
+<h3>Export Control Reform</h3>
+
+<p>[](<a href="https://www.cnas.org/publications/reports/rethinking-export-controls-unintended-consequences-and-the-new-technological-landscape">https://www.cnas.org/publications/reports/rethinking-export-controls-unintended-consequences-and-the-new-technological-landscape</a>)</p>
+
+<h2>Appendices</h2>
+
+<h3>Appendix A - The Long Term Debt Cycle</h3>
+
+<p>The long term debt cycle is a 50-75 year cycle. Interest rates rise for 15-20 years, they do not stay high, they then descend for 15-20 years, then they remain low for 20-30 years before rising again. It is hard to guage, but looking at 10 year bond yield going back to 1870, we are at the beginning of the bottom. It is likely that interest rates will remain low for the next decade, at least.</p>
+
+<p><a href="https://stooq.com/q/?s=10usy.b&amp;c=mx&amp;t=l&amp;a=lg&amp;b=0">https://stooq.com/q/?s=10usy.b&amp;c=mx&amp;t=l&amp;a=lg&amp;b=0</a></p>
+
+<h4>Implications of Low Interest Rates</h4>
+
+<p>The global equities market has a total market capitalization, as of the end of 2020, of 95 trillion dollars. That is what investors value all publicly traded companies at. By contrast, the global bond market is around 100 trillion. With low interest rates, a significant amount of money is exiting bonds seeking yield.</p>
+
+<p>Prices in the stock market will be driven up as money exits bonds looking for a home. Additionally, cash-flow producing assets will be desirable, e.g. real estate. Most importantly, this will be a time where a large amount of capital will be availble as investments to businesses. This will be an expansionary period in the United States.</p>
+
+<h3>Appendix B - The Petrodollar</h3>
+
+<p><em>This section is largely a (probably historically inaccurate) summary of this <a href="https://www.lynalden.com/fraying-petrodollar-system/">great article</a>. If you have time for the longform, I definitely recommend it.</em></p>
+
+<p>In the early part of the 20th century the US dollar was backed by and redeemable for gold. During the Great Depression, that changed. People were exchanging their dollars for gold in a run on the banks. The US put an emergency halt on this. Continuing on that line, they made ownership of gold illegal and would purchase it from individuals at $20 per ounce. This was the start of the divergence from the gold standard.</p>
+
+<p>Toward the end of WWII, the US controlled two thirds of the world&rsquo;s gold reserves. The <a href="https://en.wikipedia.org/wiki/Bretton_Woods_system">Bretton Woods</a> agreement established the US dollar and gold as the underlying assets in the global financial system.</p>
+
+<p>The global reserve currency must run trade deficits (net importer) to continue supplying other nations with the reserve currecy they require. This is not sustainable, as pointed out by the <a href="https://en.wikipedia.org/wiki/Triffin_dilemma">Triffin Dilemma</a>. Running trade deficits ended up putting more dollars out into the world than the amount of gold the US held could cover at the fixed price of $35 dollars per ounce.</p>
+
+<p>Due to this, Nixon ended the gold standard in the early 1970s. In order to maintain global demand for dollars, the US got <a href="https://en.wikipedia.org/wiki/OPEC">OPEC</a> to agree to only sell oil in US dollars. Hence, the birth of the petrodollar. There is a similar idea under Modern Monetary Theory that taxation is what can give fiat currecy value. An entity&rsquo;s desire to do business in an economy can only be achieved by paying tax in that economy&rsquo;s currency. This creates demand for the currecy. Similarly, on a global stage, to get access to oil you needed US dollars, which stimulated demand for US dollars.</p>
+
+<p>We have benefited from this. Countries want our dollars so they compete on exports in order to get those dollars. Things get cheaper and quality of life improves for those with money. Unfortunately, we still need to run persistent trade deficits to maintain this. This comes at the expense of our manufacturing capabilities. We cannot run deficits forever.</p>
+
+<p>Normally, countries would accumulate dollars then purchase treasuries to park their dollars and gain interest. This was a nice feedback loop into the system, allowing us to print more dollars and continue to run up our trade deficit.</p>
+
+<p>China bucked this trend in 2012. Rather than buying US debt, they started loaning money to other countries for infrastructure projects. This was an investment in assets and trading partners. It does start to break down the petrodollar system though.</p>
+
+<p>The idea here is that the dollar is in a position to weaken, but this is not a bad thing. A weaker dollar means that it will be cheaper for other countries to purchase our goods and services, we can balance our trade out and address the unsustainable deficit.</p>
+
+<p>This may mean the end of the US dollar as the global reserve currency. It will remain important on the world stage, but we may see a shift to regional reserve currencies. Where the full-spectrum of trade could be contained regionally rather than globally.</p>
+
+<h1>Positioning</h1>
+
+<p>Interest rates are low. Use that leverage to acquire some assets that produce cashflow (i.e. real estate).</p>
+
+<p>Investment capital is plentiful. Now is the time to build a business.</p>
+
+<p>Use desperate venture capital to monopolize the cyber talent pool.</p>
+
+<p>Patents around engineering regulation and assurance.</p>
+
+<p>Regulation around tooling and intellectual property.</p>
+
+<p>A major conflict in 10-20 years, at the end of the expansionary phase. Be positioned as a defense contractor to profit.</p>
+]]></content:encoded>
+      <author>tacixat</author>
+      <pubDate>Fri, 25 Dec 2020 13:37:00 -0400</pubDate>
+    </item>
+    <item>
+      <title>Ransomware in Golang - Part 3</title>
+      <link>https://tacix.at/posts/Ransomware in Golang - Part 3.html</link>
+      <description>We write the wares...</description>
+      <content:encoded><![CDATA[<p>We&rsquo;re ready to write the client for our malware! We have the server&rsquo;s keypair and some understand of how to build this, so let&rsquo;s get started.</p>
+
+<p><em>If you haven&rsquo;t seen the other posts, you can follow along from the beginning at <a href="https://tacix.at">tacix.at</a>.</em></p>
+
+<p>Following is a high level sketch of what our client needs to do.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// generate client keypair
+</span><span style="color:#75715e"></span><span style="color:#75715e">// encrypt client private key with server public key
+</span><span style="color:#75715e"></span><span style="color:#75715e">// post encrypted client private key to server
+</span><span style="color:#75715e"></span><span style="color:#75715e">// walk target directory
+</span><span style="color:#75715e"></span>	<span style="color:#75715e">// at each file
+</span><span style="color:#75715e"></span>	<span style="color:#75715e">// generate file key
+</span><span style="color:#75715e"></span>	<span style="color:#75715e">// read file
+</span><span style="color:#75715e"></span>	<span style="color:#75715e">// encrypt file
+</span><span style="color:#75715e"></span>	<span style="color:#75715e">// encrypt file key with client public key
+</span><span style="color:#75715e"></span>	<span style="color:#75715e">// store encrypted file key
+</span><span style="color:#75715e"></span>	<span style="color:#75715e">// write encrypted data back to file
+</span></pre>
+<p>Pretty easy! We have already learned most of these things in previous posts. The largest missing piece is encrypting the file. Since our RSA keys can barely encrypt 63 bytes of data, and files can be much larger than 63 bytes, we will need to use something else. For this we will use AES which is a symmetric encryption algorithm.</p>
+
+<h2>Symmetric Encryption with AES</h2>
+
+<p>What we will be doing is generating an AES key for each file, encrypting the file with that, then encrypting that key with the client&rsquo;s public key. So let&rsquo;s figure out how to use AES.</p>
+]]></content:encoded>
+      <author>tacixat</author>
+      <pubDate>Fri, 25 Dec 2020 13:37:00 -0400</pubDate>
+    </item>
     <item>
       <title>Ransomware in Golang - Part 2</title>
       <link>https://tacix.at/posts/Ransomware in Golang - Part 2.html</link>
