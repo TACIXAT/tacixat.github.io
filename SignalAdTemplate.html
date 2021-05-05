@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width">
+
+	<title>Signal Ad Template</title>
+	<style>
+		@font-face {
+		font-family: 'Inter';
+		src: url(Inter-SemiBold.ttf);
+		}
+
+		body {
+			font-size: 24px;
+			font-family: monospace;
+		}
+
+		input {
+			display: block;
+			margin-top: 5px;
+			font-size: 24px;
+			font-family: monospace;
+			width: 500px;
+		}
+
+		button {
+			font-family: monospace;
+			font-size: 24px;
+		}
+
+		#canvas {
+			height: 512px;
+			width: 512px;
+		}
+
+		#download:visited {
+			text-decoration: none; 
+			color:blue;
+		}
+
+		#controls {
+			margin: 10px 0 10px 0;
+		}
+
+		#plug {
+			margin: 10px 0 10px 0;
+		}
+	</style>
+</head>
+
+<body>
+	<div id=controls>
+		<span>Templates: </span>
+		<button onclick='draw(0)'>Pilates</button>
+		<button onclick='draw(1)'>K-pop</button>
+		<button onclick='draw(2)'>Teacher</button>
+		<button onclick='draw(3)'>Art History</button>
+		<button onclick='draw(4)'>CPA</button>
+		<button onclick='draw(5)'>Goth Barista</button>
+
+		<div id=bureaucracy></div>
+
+		<a id=download download=getsignal.png href='' onclick='dl()'>
+			Download PNG
+		</a>
+	</div>
+	<canvas id=canvas width=1000px height=1000px>
+	</canvas>	
+	<div id=plug>No affiliation, but you should check out <a href='https://signal.org/'>Signal.</a></div>
+	<script>
+		const templates = [
+			[
+				"You got this ad because you're a ",
+				"newlywed pilates instructor",
+				" and you're ",
+				"cartoon crazy.",
+				"\nThis ad used your location to see you're in ",
+				"La Jolla.",
+				"\nYou're into ",
+				"parenting blogs",
+				" and thinking about ",
+				"LGBTQ adoption.",
+			],
+			[
+				"You got this ad because you're a ",
+				"K-pop",
+				"-loving ",
+				"chemical engineer.",
+				"\nThis ad used your location to see you're in ",
+				"Berlin.",
+				"\nAnd you have a ",
+				"new baby.",
+				" And just ",
+				"moved.",
+				" And you're really feeling those ",
+				"pregnancy exercises",
+				" lately.",
+			],
+			[
+				"You got this ad because you're a ",
+				"teacher,",
+				" but more importantly you're a ",
+				"Leo",
+				" (and ",
+				"single",
+				").\nThis ad used your location to see you're in ",
+				"Moscow.",
+				"\nYou like to support ",
+				"sketch comedy,",
+				" and this ad thinks you do ",
+				"drag.",
+			],
+			[
+				"You got this ad because you're a ",
+				"GP",
+				" with a ",
+				"Master's in art history.",
+				" Also ",
+				"divorced.",
+				"\nThis ad used your location to see you're in ",
+				"London.",
+				"\nYour online activity shows that you've been getting into ",
+				"boxing,",
+				" and you're probably getting there on your new ",
+				"motorcycle.",
+			],
+			[
+				"You got this ad because you're a ",
+				"certified public accountant",
+				" in an ",
+				"open relationship.",
+				"\nThis ad used your location to see you're in ",
+				"South Atlanta.",
+				"\nYou're into ",
+				"natural skin care",
+				" and you've supported ",
+				"Cadi B",
+				" since day one.",
+			],
+			[
+				"You got this ad because you're a ",
+				"Goth barista",
+				" and you're ",
+				"single.",
+				"\nThis ad used your location to see you're in ",
+				"Clinton Hill.",
+				"\nAnd you're either ",
+				"vegan",
+				" or ",
+				"lactose intolerant",
+				" and you're really feeling that ",
+				"yoga",
+				" lately."
+			],
+		];
+
+		function dl() {
+			const canvas = document.getElementById('canvas');
+			const dl = document.getElementById('download');
+				dl.href = canvas.toDataURL('png');
+		}
+
+		function linebreak(ctx, line, i, x, y, dim, margin) {
+			if (line[i] == '\n') return true;
+			if (line[i] == ' ') return false;
+			// only check after spaces
+			if (i > 0 && line[i-1] != ' ') return false;
+			while (i < line.length && line[i] != ' ') {
+				const measurement = ctx.measureText(line[i]);
+				x += measurement.width-1;
+				if (x > dim-margin) return true;
+				if (y > dim*0.75 && x > 800) return true;
+				i++;
+			}
+			return false;
+		}
+
+		function draw(choice) {
+			const lines = templates[choice];
+			const bureau = document.getElementById('bureaucracy');
+			bureau.innerHTML = '';
+			let user = false;
+			for (const line of lines) {
+				const el = document.createElement('input');
+				if (!user) {
+					el.type = 'hidden';
+				} else {
+					el.type = 'text';
+				}
+				el.value = line;
+				el.onkeyup = redraw;
+				bureau.appendChild(el);
+				user = !user;
+			}
+			redraw();
+		}
+
+		function redraw() {
+			const canvas = document.getElementById('canvas');
+			const ctx = canvas.getContext('2d');
+			const dim = 1000;
+
+			ctx.beginPath();
+			ctx.rect(0, 0, dim, dim);
+			const gradient = ctx.createLinearGradient(0, 0, 0, dim);
+			gradient.addColorStop(0, "#3874ee");
+			gradient.addColorStop(1, "#2660cd");
+			// ctx.fillStyle = "#3a76f0"; // signal logo bg
+			ctx.fillStyle = gradient;
+			ctx.fill();
+
+			var logo = new Image();
+			logo.onload = function() {
+				ctx.drawImage(logo, dim-190, dim-180, 165, 165)
+			};
+			logo.src = "Signal-Logo.svg";
+
+			const fontSize = 68;
+			ctx.font = `${fontSize}px Inter`;
+			ctx.textBaseline = 'top';
+
+			const marginx = 55;
+			const marginy = 75;
+			let currx = marginx;
+			let curry = marginy; // lol
+			
+			const bureau = document.getElementById('bureaucracy');
+			for (const form of bureau.children) {
+				const line = form.value;
+				for (let i=0; i<line.length; i++) {
+					let letter = line[i];
+					if (linebreak(
+							ctx, line, i, currx, curry, dim, marginx)) 
+					{
+						curry += fontSize+15;
+						currx = marginx;
+						if (letter == '\n') {
+							curry += 25;
+							continue;
+						}
+					}
+
+					let adjust = 0;
+					if (letter == 'Y') {
+						adjust = 6;
+					}
+
+					if (letter == "'") letter = '’';
+
+					const measurement = ctx.measureText(letter);
+
+					if (form.type == 'text') {
+						let boxAdjust = 0;
+						if (i == line.length-1) boxAdjust=3;
+						ctx.beginPath();
+						ctx.rect(
+							currx-1, 
+							curry-7, 
+							measurement.width+(1+boxAdjust), 
+							fontSize+10);
+						ctx.fillStyle = '#1d4694';
+						ctx.fill();
+					}
+
+					ctx.fillStyle = '#ffffff';
+					ctx.fillText(letter, currx, curry);
+					currx += measurement.width-(2+adjust);
+				}
+			}
+		}
+
+		draw(0);
+	</script>
+</body>
+</html>
