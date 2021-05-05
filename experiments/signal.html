@@ -270,9 +270,9 @@
 			}
 		}
 
-		window.addEventListener('load', function () {
+		document.fonts.onloadingdone = () => {
 			draw(0);
-		}, false);
+		};
 	</script>
 </body>
 </html>
