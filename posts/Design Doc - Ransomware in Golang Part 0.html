@@ -3,11 +3,11 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Go ransomware design document...">
-  <meta property="og:title" content="Ransomware in Golang - Part 0">
+  <meta property="og:title" content="Design Doc - Ransomware in Golang Part 0">
   <meta property="og:description" content="Go ransomware design document...">
   <meta property="og:site_name" content="TACIX.AT">
   <meta name="twitter:site" content="@cyberingcc">
-  <title>TACIX.AT - Ransomware in Golang - Part 0</title>
+  <title>TACIX.AT - Design Doc - Ransomware in Golang Part 0</title>
   <link href="https://fonts.googleapis.com/css2?family=Inconsolata&family=Major+Mono+Display&display=swap" rel="stylesheet"> 
   <style>
     html {
@@ -148,7 +148,7 @@
 
   <div id=main>
   
-  <div id=title>Ransomware in Golang - Part 0</div>
+  <div id=title>Design Doc - Ransomware in Golang Part 0</div>
   <div id=date>2020/11/06 13:37</div>
   <div>
 <p>We’re going to build some ransomware. This document covers the high level design and a few details to get us started. We’ll be using an asymmetric + symmetric encryption scheme for locking files. We’ll also build a server for handling decryption. All of this will be written in Go, so it will be cross platform. Our malware will show off Go’s great parallelization and networking capabilities. From there we’ll get into the technical details and start looking at anti-analysis tricks and signature writing. I’ll take you through everything step by step.</p>
