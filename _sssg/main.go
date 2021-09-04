@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/BurntSushi/toml"
-	// "github.com/alecthomas/chroma/formatters/html"
+	"github.com/alecthomas/chroma/formatters/html"
 	"github.com/gorilla/feeds"
 	"gopkg.in/russross/blackfriday.v2"
 	"html/template"
@@ -95,10 +95,10 @@ func genPosts(id *IndexData) {
 			continue
 		}
 
-		// cr := NewChromaRenderer(
-		// 	ChromaOptions(html.TabWidth(4)))
+		cr := NewChromaRenderer(
+			ChromaOptions(html.TabWidth(4)))
 		pd.Raw = template.HTML(blackfriday.Run(
-			md))
+			md, blackfriday.WithRenderer(cr)))
 		writeTemplate(
 			[]string{
 				"_templates/post.gohtml",

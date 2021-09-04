@@ -174,46 +174,44 @@
 <h3>Less talk, more typie typie</h3>
 
 <p>Alright, 程序猿 reporting for duty. Here&rsquo;s a little scratch program that generates a key, encrypts a short plaintext, then decrypts it.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// scratch/asym.go
+</span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
 
-<pre><code class="language-golang">// scratch/asym.go
-package main
-
-import (
-	&quot;crypto/rand&quot;
-	&quot;crypto/rsa&quot;
-	&quot;crypto/sha256&quot;
-	&quot;log&quot;
-	&quot;fmt&quot;
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;crypto/rand&#34;</span>
+	<span style="color:#e6db74">&#34;crypto/rsa&#34;</span>
+	<span style="color:#e6db74">&#34;crypto/sha256&#34;</span>
+	<span style="color:#e6db74">&#34;log&#34;</span>
+	<span style="color:#e6db74">&#34;fmt&#34;</span>
 )
 
-func main() {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
-	if err != nil {
-		log.Fatal(err)
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#a6e22e">privateKey</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">GenerateKey</span>(<span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#ae81ff">1024</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 	}
-	publicKey := privateKey.PublicKey
+	<span style="color:#a6e22e">publicKey</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">privateKey</span>.<span style="color:#a6e22e">PublicKey</span>
 
-	p := []byte{0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5}
-	fmt.Printf(&quot;Plaintext:\t%v\n&quot;, p)
+	<span style="color:#a6e22e">p</span> <span style="color:#f92672">:=</span> []<span style="color:#66d9ef">byte</span>{<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">4</span>,<span style="color:#ae81ff">5</span>,<span style="color:#ae81ff">6</span>,<span style="color:#ae81ff">7</span>,<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">9</span>,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">4</span>,<span style="color:#ae81ff">5</span>}
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Plaintext:\t%v\n&#34;</span>, <span style="color:#a6e22e">p</span>)
 
-	c, err := rsa.EncryptOAEP(
-		sha256.New(), rand.Reader, &amp;publicKey, p, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf(&quot;Ciphertext:\t%v\n&quot;, c)
-
-	pd, err := rsa.DecryptOAEP(
-		sha256.New(), rand.Reader, privateKey, c, nil)
-	if err != nil {
-		log.Fatal(err)
+	<span style="color:#a6e22e">c</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">EncryptOAEP</span>(
+		<span style="color:#a6e22e">sha256</span>.<span style="color:#a6e22e">New</span>(), <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">publicKey</span>, <span style="color:#a6e22e">p</span>, <span style="color:#66d9ef">nil</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 	}
 
-	fmt.Printf(&quot;Decrypted:\t%v\n&quot;, pd)
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Ciphertext:\t%v\n&#34;</span>, <span style="color:#a6e22e">c</span>)
+
+	<span style="color:#a6e22e">pd</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">DecryptOAEP</span>(
+		<span style="color:#a6e22e">sha256</span>.<span style="color:#a6e22e">New</span>(), <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#a6e22e">privateKey</span>, <span style="color:#a6e22e">c</span>, <span style="color:#66d9ef">nil</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
+	}
+
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Decrypted:\t%v\n&#34;</span>, <span style="color:#a6e22e">pd</span>)
 }
-</code></pre>
-
+</pre>
 <p>First things first, we&rsquo;re importing <code>crypto/rand</code>. This is a cryptographically secure random number generator and not a psuedo random number generator. Pseudo random number generators (i.e. <code>math/random</code>) use some cute math to produce seemingly random numbers which <a href="https://blog.securityevaluators.com/hacking-the-javascript-lottery-80cc437e3b7f">are often predictable</a>. This is fine in cases where it doesnt matter but cryptography is a case where it absolutely does matter.</p>
 
 <p>Next we generate our private key by passing our source of random bytes and a key size in bits to <a href="https://golang.org/pkg/crypto/rsa/#GenerateKey"><code>rsa.GenerateKey()</code></a>. Here we are using 1024 which is small but <a href="https://crypto.stackexchange.com/a/1982/80736">hasn&rsquo;t been factored yet</a>. I think these can be any size but in practice you only ever seen multiples of 1024 (i.e. 2048, 3072, 4096). I&rsquo;ve seen keys smaller than 1024 that weren&rsquo;t multiples of 1024 but you get the point, generally powers of 2.</p>
@@ -229,11 +227,9 @@ func main() {
 </blockquote>
 
 <p>We&rsquo;ve decided on <code>OAEP</code>, let&rsquo;s review some of the parameters.</p>
-
-<pre><code class="language-golang">c, err := rsa.EncryptOAEP(
-		sha256.New(), rand.Reader, &amp;publicKey, p, nil)
-</code></pre>
-
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#a6e22e">c</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">EncryptOAEP</span>(
+		<span style="color:#a6e22e">sha256</span>.<span style="color:#a6e22e">New</span>(), <span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">publicKey</span>, <span style="color:#a6e22e">p</span>, <span style="color:#66d9ef">nil</span>)
+</pre>
 <p>The first is a hash function, which is used to hash the data gotten from the <code>random.Reader</code> which is passed in as the second parameter. This randomness is used to make sure the same plaintext doesn&rsquo;t encrypt to the same ciphertext. If it did, and say you were encrypting each letter you typed, someone could do a frequency analysis on the ciphertexts and figure out which ones corresponded to which keys. This would be bad.</p>
 
 <p>Next we pass in a pointer to our public key and the plaintext. The last parameter is a label, if we were encrypting multiple things we might want to label them. That would ensure that one type of encrypted thing couldn&rsquo;t be confused as the other. We aren&rsquo;t though so that is <code>nil</code>.</p>
@@ -273,113 +269,106 @@ func main() {
 <p>Let&rsquo;s get to it then! We&rsquo;ll be generating a keypair, writing our RSA / PKCS1 keys out in an ASN.1 DER encoded format. For this one we&rsquo;re upping the bits to 2k48 because we&rsquo;ll be encrypting the client key (1k24 bits) and from our formula <code>(2048 bits - (32 bytes * 2 * 8 bits/byte) - 2) = 1534 bits</code>, AKA enough space to fit a 1024 bit key. We could go as low as a 1538 bit server key but using something that isn&rsquo;t a power of 2 would offend the divine numerology and our malware would no longer be blessed.</p>
 
 <p>First, we don&rsquo;t want to overwrite our server keypair so we&rsquo;re going to check if those files exist.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">errPub</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stat</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>)
+	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">errPrv</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stat</span>(<span style="color:#e6db74">&#34;key.prv&#34;</span>)
 
-<pre><code class="language-golang">	_, errPub := os.Stat(&quot;key.pub&quot;)
-	_, errPrv := os.Stat(&quot;key.prv&quot;)
-
-	if errPub == nil &amp;&amp; errPrv == nil {
-		pub, err := ioutil.ReadFile(&quot;key.pub&quot;)
-		if err != nil {
-			log.Fatal(err)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">errPub</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">errPrv</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">pub</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 		}
-		printBytes(pub)
-		log.Fatal(&quot;keypair exists, will not overwrite&quot;)	
+		<span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span>)
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;keypair exists, will not overwrite&#34;</span>)	
 	}
-</code></pre>
-
+</pre>
 <p>Following that, we generate a key, get the DER encoded bytes of the public key, write them to a file, ditto for the private key.</p>
-
-<pre><code class="language-golang">	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		log.Fatal(err)
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	<span style="color:#a6e22e">privateKey</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">GenerateKey</span>(<span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#ae81ff">2048</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 	}
 
-	pub := x509.MarshalPKCS1PublicKey(&amp;privateKey.PublicKey)
-	err = ioutil.WriteFile(&quot;key.pub&quot;, pub, 0644)
-	if err != nil {
-		log.Fatal(err)
+	<span style="color:#a6e22e">pub</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">x509</span>.<span style="color:#a6e22e">MarshalPKCS1PublicKey</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">privateKey</span>.<span style="color:#a6e22e">PublicKey</span>)
+	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">WriteFile</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>, <span style="color:#a6e22e">pub</span>, <span style="color:#ae81ff">0644</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 	}
 
-	prv := x509.MarshalPKCS1PrivateKey(privateKey)
-	err = ioutil.WriteFile(&quot;key.prv&quot;, prv, 0644)
-	if err != nil {
-		log.Fatal(err)
+	<span style="color:#a6e22e">prv</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">x509</span>.<span style="color:#a6e22e">MarshalPKCS1PrivateKey</span>(<span style="color:#a6e22e">privateKey</span>)
+	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">WriteFile</span>(<span style="color:#e6db74">&#34;key.prv&#34;</span>, <span style="color:#a6e22e">prv</span>, <span style="color:#ae81ff">0644</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 	}
-</code></pre>
-
+</pre>
 <p>We also add a cute little <code>printBytes()</code> function to pretty print our public key in a way we can just paste into our client. Note, we also print the bytes when the keys exist because we might want to reprint those.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">// util/genkey.go
+</span><span style="color:#75715e"></span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
 
-<pre><code class="language-golang">// util/genkey.go
-package main
-
-import (
-	&quot;crypto/rand&quot;
-	&quot;crypto/rsa&quot;
-	&quot;crypto/x509&quot;
-	&quot;fmt&quot;
-	&quot;io/ioutil&quot;
-	&quot;log&quot;
-	&quot;os&quot;
+<span style="color:#f92672">import</span> (
+	<span style="color:#e6db74">&#34;crypto/rand&#34;</span>
+	<span style="color:#e6db74">&#34;crypto/rsa&#34;</span>
+	<span style="color:#e6db74">&#34;crypto/x509&#34;</span>
+	<span style="color:#e6db74">&#34;fmt&#34;</span>
+	<span style="color:#e6db74">&#34;io/ioutil&#34;</span>
+	<span style="color:#e6db74">&#34;log&#34;</span>
+	<span style="color:#e6db74">&#34;os&#34;</span>
 )
 
-func printBytes(pub []byte) {
-	fmt.Printf(&quot;\tpub := []byte{&quot;)
-	for i := range pub {
-		if i &gt; 0 {
-			fmt.Printf(&quot;,&quot;)
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span> []<span style="color:#66d9ef">byte</span>) {
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\tpub := []byte{&#34;</span>)
+	<span style="color:#66d9ef">for</span> <span style="color:#a6e22e">i</span> <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> <span style="color:#a6e22e">pub</span> {
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">i</span> &gt; <span style="color:#ae81ff">0</span> {
+			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;,&#34;</span>)
 		}
 
-		if i%8 == 0 {
-			fmt.Printf(&quot;\n\t\t&quot;)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">i</span><span style="color:#f92672">%</span><span style="color:#ae81ff">8</span> <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> {
+			<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;\n\t\t&#34;</span>)
 		}
 
-		fmt.Printf(&quot; 0x%02x&quot;, pub[i])
+		<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34; 0x%02x&#34;</span>, <span style="color:#a6e22e">pub</span>[<span style="color:#a6e22e">i</span>])
 	}
-	fmt.Println(&quot; }&quot;)
+	<span style="color:#a6e22e">fmt</span>.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34; }&#34;</span>)
 }
 
-func main() {
-	_, errPub := os.Stat(&quot;key.pub&quot;)
-	_, errPrv := os.Stat(&quot;key.prv&quot;)
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">errPub</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stat</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>)
+	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">errPrv</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">os</span>.<span style="color:#a6e22e">Stat</span>(<span style="color:#e6db74">&#34;key.prv&#34;</span>)
 
-	if errPub == nil &amp;&amp; errPrv == nil {
-		pub, err := ioutil.ReadFile(&quot;key.pub&quot;)
-		if err != nil {
-			log.Fatal(err)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">errPub</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#a6e22e">errPrv</span> <span style="color:#f92672">==</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">pub</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>)
+		<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+			<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 		}
-		printBytes(pub)
-		log.Fatal(&quot;keypair exists, will not overwrite&quot;)
+		<span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span>)
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#e6db74">&#34;keypair exists, will not overwrite&#34;</span>)
 	}
 
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		log.Fatal(err)
+	<span style="color:#a6e22e">privateKey</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">rsa</span>.<span style="color:#a6e22e">GenerateKey</span>(<span style="color:#a6e22e">rand</span>.<span style="color:#a6e22e">Reader</span>, <span style="color:#ae81ff">2048</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 	}
 
-	pub := x509.MarshalPKCS1PublicKey(&amp;privateKey.PublicKey)
-	err = ioutil.WriteFile(&quot;key.pub&quot;, pub, 0644)
-	if err != nil {
-		log.Fatal(err)
+	<span style="color:#a6e22e">pub</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">x509</span>.<span style="color:#a6e22e">MarshalPKCS1PublicKey</span>(<span style="color:#f92672">&amp;</span><span style="color:#a6e22e">privateKey</span>.<span style="color:#a6e22e">PublicKey</span>)
+	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">WriteFile</span>(<span style="color:#e6db74">&#34;key.pub&#34;</span>, <span style="color:#a6e22e">pub</span>, <span style="color:#ae81ff">0644</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 	}
 
-	prv := x509.MarshalPKCS1PrivateKey(privateKey)
-	err = ioutil.WriteFile(&quot;key.prv&quot;, prv, 0644)
-	if err != nil {
-		log.Fatal(err)
+	<span style="color:#a6e22e">prv</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">x509</span>.<span style="color:#a6e22e">MarshalPKCS1PrivateKey</span>(<span style="color:#a6e22e">privateKey</span>)
+	<span style="color:#a6e22e">err</span> = <span style="color:#a6e22e">ioutil</span>.<span style="color:#a6e22e">WriteFile</span>(<span style="color:#e6db74">&#34;key.prv&#34;</span>, <span style="color:#a6e22e">prv</span>, <span style="color:#ae81ff">0644</span>)
+	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#a6e22e">log</span>.<span style="color:#a6e22e">Fatal</span>(<span style="color:#a6e22e">err</span>)
 	}
 
-	printBytes(pub)
+	<span style="color:#a6e22e">printBytes</span>(<span style="color:#a6e22e">pub</span>)
 }
-</code></pre>
-
+</pre>
 <p>Now we run it. I&rsquo;m going to do so in the <code>~/prog/rw/server/</code> directory which doesn&rsquo;t exist yet.</p>
 
 <p>Worry if your&rsquo;s outputs the same key as mine and don&rsquo;t worry about the converse.</p>
-
-<pre><code class="language-bash">$ mkdir server
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">$ mkdir server
 $ cd server
 $ go run ../util/genkey.go
-	pub := []byte{
+	pub :<span style="color:#f92672">=</span> <span style="color:#f92672">[</span><span style="color:#f92672">]</span>byte<span style="color:#f92672">{</span>
 		0x30, 0x82, 0x01, 0x0a, 0x02, 0x82, 0x01, 0x01,
 		0x00, 0xb4, 0x10, 0x46, 0xf7, 0x7e, 0x73, 0x72,
 		0x22, 0x4a, 0xcf, 0x98, 0xc8, 0x60, 0x67, 0x6c,
@@ -413,11 +402,10 @@ $ go run ../util/genkey.go
 		0x0d, 0x92, 0x49, 0x0b, 0x60, 0x25, 0x15, 0xd2,
 		0xad, 0xfa, 0x56, 0xb1, 0x0a, 0x94, 0xfc, 0xdc,
 		0x55, 0xb9, 0x52, 0xe6, 0x64, 0x93, 0x85, 0x36,
-		0x23, 0x02, 0x03, 0x01, 0x00, 0x01 }
+		0x23, 0x02, 0x03, 0x01, 0x00, 0x01 <span style="color:#f92672">}</span>
 $ ls 
 key.prv  key.pub
-</code></pre>
-
+</pre>
 <h2>Conclusion</h2>
 
 <p>Hopefully now we understand what asymmetric encryption is. We know that RSA has many pitfalls but Go provides some sane defaults as long as you can read. We can also generate the keypair for our server (yay).</p>
