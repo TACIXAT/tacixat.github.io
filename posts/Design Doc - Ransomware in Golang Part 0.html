@@ -161,11 +161,11 @@
 Encryption Scheme</p>
 
 <p>The server will have an asymmetric keypair (e.g. RSA). The server private key will be kept private on the server. The server public key will be embedded in the encryptor client. When the client runs it will generate a client keypair and encrypt the private key with the server’s public key. For each file, it will generate a random symmetric key (e.g. AES). That file key will be used to encrypt the file contents, then that key will be encrypted with the client’s public key and stored. We will also store the IV and number of padding bytes for each file.</p>
-<pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#8be9fd;font-style:italic">type</span> EncryptionInfo <span style="color:#8be9fd;font-style:italic">struct</span> {
-	Path    <span style="color:#8be9fd">string</span>
-	Padding <span style="color:#8be9fd">uint8</span>
-	Key     []<span style="color:#8be9fd">byte</span>
-	Iv      []<span style="color:#8be9fd">byte</span>
+<pre style="color:#d0d0d0;background-color:#202020;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#6ab825;font-weight:bold">type</span> EncryptionInfo <span style="color:#6ab825;font-weight:bold">struct</span> {
+	Path    <span style="color:#6ab825;font-weight:bold">string</span>
+	Padding <span style="color:#6ab825;font-weight:bold">uint8</span>
+	Key     []<span style="color:#6ab825;font-weight:bold">byte</span>
+	Iv      []<span style="color:#6ab825;font-weight:bold">byte</span>
 } 
 </pre>
 <p>This allows the server to unlock a machine by decrypting the single client private key. That client key and be used to decrypt each file key, and each file key, in turn, can be used to decrypt its respective file.</p>
