@@ -97,7 +97,7 @@ func genPosts(id *IndexData) {
 
 		cr := NewChromaRenderer(
 			ChromaOptions(html.TabWidth(4)))
-		Style("base16-snazzy")(cr)
+		// Style("base16-snazzy")(cr)
 		pd.Raw = template.HTML(blackfriday.Run(
 			md, blackfriday.WithRenderer(cr)))
 		writeTemplate(

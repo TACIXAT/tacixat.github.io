@@ -156,93 +156,93 @@
 <h2>Golang</h2>
 
 <p>I ended up clocking in about ~150 lines for my main file, which I thought would be the heart of the code. The main idea is loop over some markdown posts, md -&gt; html using <a href="https://github.com/russross/blackfriday">Blackfriday</a>, then generate the index from the posts.</p>
-<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#fff;font-weight:bold">func</span> main() {
-	id := &amp;IndexData{
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	id <span style="color:#f92672">:=</span> <span style="color:#f92672">&amp;</span>IndexData{
 		Posts: []PostData{},
 	}
 
-	genPosts(id)
+	<span style="color:#a6e22e">genPosts</span>(id)
 
-	writeTemplate(
-		[]<span style="color:#fff;font-weight:bold">string</span>{
-			<span style="color:#0ff;font-weight:bold">&#34;_templates/index.gohtml&#34;</span>,
-			<span style="color:#0ff;font-weight:bold">&#34;_templates/base.gohtml&#34;</span>,
-		}, <span style="color:#0ff;font-weight:bold">&#34;index.html&#34;</span>, id)
+	<span style="color:#a6e22e">writeTemplate</span>(
+		[]<span style="color:#66d9ef">string</span>{
+			<span style="color:#e6db74">&#34;_templates/index.gohtml&#34;</span>,
+			<span style="color:#e6db74">&#34;_templates/base.gohtml&#34;</span>,
+		}, <span style="color:#e6db74">&#34;index.html&#34;</span>, id)
 
-	genAbout()
+	<span style="color:#a6e22e">genAbout</span>()
 }
 </pre>
 <p>Since the heart of things is the <code>genPosts</code> function, we&rsquo;ll look at that. The first block is listing out the markdown files in the <code>_posts</code> folder. Then we kick it off looping over those and generating an HTML file for each.</p>
-<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4">files, err := ioutil.ReadDir(<span style="color:#0ff;font-weight:bold">&#34;_posts&#34;</span>)
-<span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
-	log.Fatal(err)
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">files, err <span style="color:#f92672">:=</span> ioutil.<span style="color:#a6e22e">ReadDir</span>(<span style="color:#e6db74">&#34;_posts&#34;</span>)
+<span style="color:#66d9ef">if</span> err <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+	log.<span style="color:#a6e22e">Fatal</span>(err)
 }
 
-<span style="color:#fff;font-weight:bold">for</span> _, f := <span style="color:#fff;font-weight:bold">range</span> files {
-	<span style="color:#007f7f">// ...
-</span><span style="color:#007f7f"></span>}
+<span style="color:#66d9ef">for</span> _, f <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> files {
+	<span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>}
 </pre>
 <p>In our for loop, the first step is reading the file in, which is pretty straight forward Go code.</p>
-<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	md, err := ioutil.ReadFile(<span style="color:#0ff;font-weight:bold">&#34;_posts/&#34;</span> + f.Name())
-	<span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
-		log.Println(err)
-		<span style="color:#fff;font-weight:bold">continue</span>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	md, err <span style="color:#f92672">:=</span> ioutil.<span style="color:#a6e22e">ReadFile</span>(<span style="color:#e6db74">&#34;_posts/&#34;</span> <span style="color:#f92672">+</span> f.<span style="color:#a6e22e">Name</span>())
+	<span style="color:#66d9ef">if</span> err <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		log.<span style="color:#a6e22e">Println</span>(err)
+		<span style="color:#66d9ef">continue</span>
 	}
 </pre>
 <p>Now I jumped right into rendering the markdown using Blackfriday and I kept getting awful parser errors. I was seriously wondering how such a buggy repo could have so many stars! It was user error though. I&rsquo;m on a Windows host, and the <code>\r\n</code> is apparently not handled by Blackfriday! This was the most time consuming thing of the project. That gives us this beautiful function which is just a <code>bytes.Replace()</code>.</p>
-<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	md = windowsBad(md)
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	md = <span style="color:#a6e22e">windowsBad</span>(md)
 </pre>
 <p>In my review of SSGs I noticed they all had some metadata at the top of the file. This is called <em>Front Matter</em>. It seemed simple enough, you have some JSON, YAML, or TOML followed by a delimeter. I chose TOML since I had never used it before. I have a strange affinity for JSON but it is kinda a pain to write. I chose the delimiter <code>---</code>.</p>
 
 <p>Simply split on that, grab the chunk before and treat it as TOML, rejoin the chunk after and treat it as markdown.</p>
-<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	s := bytes.Split(md, []<span style="color:#fff;font-weight:bold">byte</span>(<span style="color:#0ff;font-weight:bold">&#34;\n---\n&#34;</span>))
-	<span style="color:#fff;font-weight:bold">if</span> <span style="color:#fff;font-weight:bold">len</span>(s) &lt; <span style="color:#ff0;font-weight:bold">2</span> {
-		log.Println(<span style="color:#0ff;font-weight:bold">&#34;Missing post metadata.&#34;</span>)
-		<span style="color:#fff;font-weight:bold">continue</span>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	s <span style="color:#f92672">:=</span> bytes.<span style="color:#a6e22e">Split</span>(md, []byte(<span style="color:#e6db74">&#34;\n---\n&#34;</span>))
+	<span style="color:#66d9ef">if</span> len(s) &lt; <span style="color:#ae81ff">2</span> {
+		log.<span style="color:#a6e22e">Println</span>(<span style="color:#e6db74">&#34;Missing post metadata.&#34;</span>)
+		<span style="color:#66d9ef">continue</span>
 	}
-	md = bytes.Join(s[<span style="color:#ff0;font-weight:bold">1</span>:], []<span style="color:#fff;font-weight:bold">byte</span>(<span style="color:#0ff;font-weight:bold">&#34;\n---\n&#34;</span>))
+	md = bytes.<span style="color:#a6e22e">Join</span>(s[<span style="color:#ae81ff">1</span>:], []byte(<span style="color:#e6db74">&#34;\n---\n&#34;</span>))
 
-	<span style="color:#fff;font-weight:bold">var</span> pd PostData
-	_, err = toml.Decode(<span style="color:#fff;font-weight:bold">string</span>(s[<span style="color:#ff0;font-weight:bold">0</span>]), &amp;pd)
-	<span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
-		log.Println(err)
-		<span style="color:#fff;font-weight:bold">continue</span>
+	<span style="color:#66d9ef">var</span> pd PostData
+	_, err = toml.<span style="color:#a6e22e">Decode</span>(string(s[<span style="color:#ae81ff">0</span>]), <span style="color:#f92672">&amp;</span>pd)
+	<span style="color:#66d9ef">if</span> err <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		log.<span style="color:#a6e22e">Println</span>(err)
+		<span style="color:#66d9ef">continue</span>
 	}
 </pre>
 <p>The TOML reads right into the <code>PostData</code> struct. We have a post title and a date. The tags aren&rsquo;t used right now, but it should be easy enough to whip up some JS for filtering, or individual pages for each tag. The field <code>Raw</code> is where the markdown rendered to HTML goes.</p>
-<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#fff;font-weight:bold">type</span> PostData <span style="color:#fff;font-weight:bold">struct</span> {
-	Title <span style="color:#fff;font-weight:bold">string</span>
-	Tags  []<span style="color:#fff;font-weight:bold">string</span>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">type</span> PostData <span style="color:#66d9ef">struct</span> {
+	Title <span style="color:#66d9ef">string</span>
+	Tags  []<span style="color:#66d9ef">string</span>
 	Date  time.Time
 	Raw   template.HTML
 }
 </pre>
 <p>After that we render and pass <code>PostData</code> to our templates. Then we append the post to the <code>IndexData</code> structure we passed in so we can go back and write out the index.</p>
-<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	cr := NewChromaRenderer(
-		ChromaOptions(html.TabWidth(<span style="color:#ff0;font-weight:bold">4</span>)))
-	pd.Raw = template.HTML(blackfriday.Run(
-		md, blackfriday.WithRenderer(cr)))
-	writeTemplate(
-		[]<span style="color:#fff;font-weight:bold">string</span>{
-			<span style="color:#0ff;font-weight:bold">&#34;_templates/post.gohtml&#34;</span>,
-			<span style="color:#0ff;font-weight:bold">&#34;_templates/base.gohtml&#34;</span>,
-		}, fmt.Sprintf(<span style="color:#0ff;font-weight:bold">&#34;posts/%s.html&#34;</span>, pd.Title), pd)
-	id.Posts = <span style="color:#fff;font-weight:bold">append</span>(id.Posts, pd)
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">	cr <span style="color:#f92672">:=</span> <span style="color:#a6e22e">NewChromaRenderer</span>(
+		<span style="color:#a6e22e">ChromaOptions</span>(html.<span style="color:#a6e22e">TabWidth</span>(<span style="color:#ae81ff">4</span>)))
+	pd.Raw = template.<span style="color:#a6e22e">HTML</span>(blackfriday.<span style="color:#a6e22e">Run</span>(
+		md, blackfriday.<span style="color:#a6e22e">WithRenderer</span>(cr)))
+	<span style="color:#a6e22e">writeTemplate</span>(
+		[]<span style="color:#66d9ef">string</span>{
+			<span style="color:#e6db74">&#34;_templates/post.gohtml&#34;</span>,
+			<span style="color:#e6db74">&#34;_templates/base.gohtml&#34;</span>,
+		}, fmt.<span style="color:#a6e22e">Sprintf</span>(<span style="color:#e6db74">&#34;posts/%s.html&#34;</span>, pd.Title), pd)
+	id.Posts = append(id.Posts, pd)
 </pre>
 <p>The function <code>writeTemplate</code> is just a convenience wrapper I made for executing templates then writing them to a file. Now that I&rsquo;m writing this I see I should probably check the error that it returns.</p>
-<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#fff;font-weight:bold">func</span> writeTemplate(t []<span style="color:#fff;font-weight:bold">string</span>, o <span style="color:#fff;font-weight:bold">string</span>, d <span style="color:#fff;font-weight:bold">interface</span>{}) <span style="color:#fff;font-weight:bold">error</span> {
-	it, err := template.ParseFiles(t...)
-	<span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
-		<span style="color:#fff;font-weight:bold">return</span> err
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">writeTemplate</span>(t []<span style="color:#66d9ef">string</span>, o <span style="color:#66d9ef">string</span>, d <span style="color:#66d9ef">interface</span>{}) <span style="color:#66d9ef">error</span> {
+	it, err <span style="color:#f92672">:=</span> template.<span style="color:#a6e22e">ParseFiles</span>(t<span style="color:#f92672">...</span>)
+	<span style="color:#66d9ef">if</span> err <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#66d9ef">return</span> err
 	}
 
-	f, err := os.Create(o)
-	<span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
-		<span style="color:#fff;font-weight:bold">return</span> err
+	f, err <span style="color:#f92672">:=</span> os.<span style="color:#a6e22e">Create</span>(o)
+	<span style="color:#66d9ef">if</span> err <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+		<span style="color:#66d9ef">return</span> err
 	}
-	<span style="color:#fff;font-weight:bold">defer</span> f.Close()
+	<span style="color:#66d9ef">defer</span> f.<span style="color:#a6e22e">Close</span>()
 
-	<span style="color:#fff;font-weight:bold">return</span> it.ExecuteTemplate(f, <span style="color:#0ff;font-weight:bold">&#34;base.gohtml&#34;</span>, d)
+	<span style="color:#66d9ef">return</span> it.<span style="color:#a6e22e">ExecuteTemplate</span>(f, <span style="color:#e6db74">&#34;base.gohtml&#34;</span>, d)
 }
 </pre>
 <p>I skipped over the <code>NewChromaRenderer</code> above. There is a really nice library called <a href="https://github.com/Depado/bfchroma">bfchroma</a> that adds syntax highlighting support to Blackfriday (amazing!). It doesn&rsquo;t load though.</p>
@@ -254,32 +254,32 @@
 <h2>Templates</h2>
 
 <p>I learned a bit in this project, one of the things I had never touched before was nesting Go templates. I created a base template for the whole site, then define a few sub templates that get jammed in there. The following is out of <code>base.gohtml</code>.</p>
-<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;<span style="font-weight:bold">body</span>&gt;
-  &lt;<span style="font-weight:bold">header</span>&gt;
-    &lt;<span style="font-weight:bold">span</span> <span style="color:#007f7f">id</span>=<span style="color:#0ff;font-weight:bold">title</span>&gt;&lt;<span style="font-weight:bold">a</span> <span style="color:#007f7f">href</span>=<span style="color:#0ff;font-weight:bold">/</span>&gt;TACIX.AT&lt;/<span style="font-weight:bold">a</span>&gt;&lt;/<span style="font-weight:bold">span</span>&gt;
-    &lt;<span style="font-weight:bold">span</span> <span style="color:#007f7f">id</span>=<span style="color:#0ff;font-weight:bold">about</span>&gt;&lt;<span style="font-weight:bold">a</span> <span style="color:#007f7f">href</span>=<span style="color:#0ff;font-weight:bold">/about</span>&gt;About&lt;/<span style="font-weight:bold">a</span>&gt;&lt;/<span style="font-weight:bold">span</span>&gt;
-  &lt;/<span style="font-weight:bold">header</span>&gt;
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;<span style="color:#f92672">body</span>&gt;
+  &lt;<span style="color:#f92672">header</span>&gt;
+    &lt;<span style="color:#f92672">span</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">title</span>&gt;&lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">/</span>&gt;TACIX.AT&lt;/<span style="color:#f92672">a</span>&gt;&lt;/<span style="color:#f92672">span</span>&gt;
+    &lt;<span style="color:#f92672">span</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">about</span>&gt;&lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">/about</span>&gt;About&lt;/<span style="color:#f92672">a</span>&gt;&lt;/<span style="color:#f92672">span</span>&gt;
+  &lt;/<span style="color:#f92672">header</span>&gt;
 
-  &lt;<span style="font-weight:bold">div</span> <span style="color:#007f7f">id</span>=<span style="color:#0ff;font-weight:bold">main</span>&gt;
-  <span style="color:#0f0;font-weight:bold">{{</span> <span style="color:#fff;font-weight:bold">template</span> <span style="color:#0ff;font-weight:bold">&#34;main&#34;</span> <span style="color:#007f7f">.</span> <span style="color:#0f0;font-weight:bold">}}</span>
-  &lt;/<span style="font-weight:bold">div</span>&gt;
+  &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">id</span><span style="color:#f92672">=</span><span style="color:#e6db74">main</span>&gt;
+  <span style="color:#75715e">{{</span> <span style="color:#66d9ef">template</span> <span style="color:#e6db74">&#34;main&#34;</span> <span style="color:#a6e22e">.</span> <span style="color:#75715e">}}</span>
+  &lt;/<span style="color:#f92672">div</span>&gt;
 
-  &lt;<span style="font-weight:bold">footer</span>&gt;
-  &lt;/<span style="font-weight:bold">footer</span>&gt;
-&lt;/<span style="font-weight:bold">body</span>&gt;
-&lt;/<span style="font-weight:bold">html</span>&gt;
+  &lt;<span style="color:#f92672">footer</span>&gt;
+  &lt;/<span style="color:#f92672">footer</span>&gt;
+&lt;/<span style="color:#f92672">body</span>&gt;
+&lt;/<span style="color:#f92672">html</span>&gt;
 </pre>
 <p>Then in the specific template, e.g. <code>index.gohtml</code> we can just define <code>main</code>.</p>
-<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#0f0;font-weight:bold">{{</span> define <span style="color:#0ff;font-weight:bold">&#34;main&#34;</span> <span style="color:#0f0;font-weight:bold">}}</span>
-  <span style="color:#0f0;font-weight:bold">{{</span> <span style="color:#fff;font-weight:bold">range</span> $p := <span style="color:#007f7f">.Posts</span> <span style="color:#0f0;font-weight:bold">}}</span>
-    &lt;<span style="font-weight:bold">div</span> <span style="color:#007f7f">class</span>=<span style="color:#0ff;font-weight:bold">entry</span>&gt;
-      &lt;<span style="font-weight:bold">div</span> <span style="color:#007f7f">class</span>=<span style="color:#0ff;font-weight:bold">date</span>&gt;<span style="color:#0f0;font-weight:bold">{{</span> $p<span style="color:#007f7f">.Datef</span> <span style="color:#0f0;font-weight:bold">}}</span>&lt;/<span style="font-weight:bold">div</span>&gt;
-      &lt;<span style="font-weight:bold">div</span> <span style="color:#007f7f">class</span>=<span style="color:#0ff;font-weight:bold">post</span>&gt;
-      	&lt;<span style="font-weight:bold">a</span> <span style="color:#007f7f">href</span>=<span style="color:#0ff;font-weight:bold">&#34;/posts/</span><span style="color:#0f0;font-weight:bold">{{</span> $p<span style="color:#007f7f">.Title</span> <span style="color:#0f0;font-weight:bold">}}</span><span style="color:#0ff;font-weight:bold">.html&#34;</span>&gt;<span style="color:#0f0;font-weight:bold">{{</span> $p<span style="color:#007f7f">.Title</span> <span style="color:#0f0;font-weight:bold">}}</span>&lt;/<span style="font-weight:bold">a</span>&gt;
-      &lt;/<span style="font-weight:bold">div</span>&gt;
-    &lt;/<span style="font-weight:bold">div</span>&gt;
-  <span style="color:#0f0;font-weight:bold">{{</span> <span style="color:#fff;font-weight:bold">end</span> <span style="color:#0f0;font-weight:bold">}}</span>
-<span style="color:#0f0;font-weight:bold">{{</span> <span style="color:#fff;font-weight:bold">end</span> <span style="color:#0f0;font-weight:bold">}}</span>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#75715e">{{</span> define <span style="color:#e6db74">&#34;main&#34;</span> <span style="color:#75715e">}}</span>
+  <span style="color:#75715e">{{</span> <span style="color:#66d9ef">range</span> $p <span style="color:#f92672">:=</span> <span style="color:#a6e22e">.Posts</span> <span style="color:#75715e">}}</span>
+    &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">entry</span>&gt;
+      &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">date</span>&gt;<span style="color:#75715e">{{</span> $p<span style="color:#a6e22e">.Datef</span> <span style="color:#75715e">}}</span>&lt;/<span style="color:#f92672">div</span>&gt;
+      &lt;<span style="color:#f92672">div</span> <span style="color:#a6e22e">class</span><span style="color:#f92672">=</span><span style="color:#e6db74">post</span>&gt;
+      	&lt;<span style="color:#f92672">a</span> <span style="color:#a6e22e">href</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;/posts/</span><span style="color:#75715e">{{</span> $p<span style="color:#a6e22e">.Title</span> <span style="color:#75715e">}}</span><span style="color:#e6db74">.html&#34;</span>&gt;<span style="color:#75715e">{{</span> $p<span style="color:#a6e22e">.Title</span> <span style="color:#75715e">}}</span>&lt;/<span style="color:#f92672">a</span>&gt;
+      &lt;/<span style="color:#f92672">div</span>&gt;
+    &lt;/<span style="color:#f92672">div</span>&gt;
+  <span style="color:#75715e">{{</span> <span style="color:#66d9ef">end</span> <span style="color:#75715e">}}</span>
+<span style="color:#75715e">{{</span> <span style="color:#66d9ef">end</span> <span style="color:#75715e">}}</span>
 </pre>
 <p>The <code>writeTemplate</code> function above handles loading multiple templates and then executing from <code>base.gohtml</code>. Neat! I also have one for injecting CSS. In the future when I make some more interactive blogs I will add one for JavaScript.</p>
 
