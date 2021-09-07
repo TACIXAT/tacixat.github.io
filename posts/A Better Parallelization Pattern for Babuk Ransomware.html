@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Putting up because I talked some trash in my last post.">
+  <meta property="og:title" content="A Better Parallelization Pattern for Babuk Ransomware">
+  <meta property="og:description" content="Putting up because I talked some trash in my last post.">
+  <meta property="og:site_name" content="TACIX.AT">
+  <meta name="twitter:site" content="@cyberingcc">
+  <title>TACIX.AT - A Better Parallelization Pattern for Babuk Ransomware</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inconsolata&family=Major+Mono+Display&display=swap" rel="stylesheet"> 
+  <style>
+    html {
+      height: 100%;
+    }
+    
+    header {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;      
+      width: 100%;
+      color: #EEE;
+      background-color: #333;
+      margin: 0;
+      height: 100%;
+      font-size: 28px;
+      font-family: 'Inconsolata', monospace;
+    }
+
+    footer {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: row;
+      min-height: 50px;
+    }
+
+    a {
+      color: #EEE;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    a:visited {
+      color: #DDD;
+    }
+
+    #title {
+      flex-grow: 1;
+      font-size: 32px;
+      font-weight: 300;
+      padding: 10px 0px;
+    }
+
+    #about {
+      font-size: 24px;
+      margin-top: 14px;
+    }
+
+    #main {
+      flex-grow: 1;
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      padding: 30px 0px;
+    }
+
+    #rss-link {
+      flex-grow: 1;
+      text-align: right;
+    }
+
+    @media only screen and (max-width: 959px) {
+      html {
+        padding: 5px;
+      }
+
+      header {
+        width: 100%;
+      }
+
+      #main {
+        width: 100%;
+      }
+
+      footer {
+        width: 100%;
+      }
+    }
+
+    
+    #date {
+      font-size: 18px;
+      font-style: italic;
+    }
+
+    #title {
+      font-size: 32px;
+    }
+
+    h1, h2, h3, h4, h5 {
+      color: #a8caee;
+      font-family: 'Major Mono Display', monospace;
+    }
+
+    pre {
+      font-family: 'Inconsolata', monospace !important;
+    }
+
+    p a {
+      text-decoration: underline;
+      line-height: 32px;
+    }
+
+    code {
+      color: #fbb5b5;
+      background-color: #3e3e3e;
+      border-radius: 4px;
+    }
+
+    pre {
+      overflow: auto;
+    }
+
+    @media only screen and (max-width: 959px) {
+      body {
+        font-size: 18px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <header>
+    <span id=title><a href=/>TACIX.AT</a></span>
+    <span id=about><a href=/about>About</a></span>
+  </header>
+
+  <div id=main>
+  
+  <div id=title>A Better Parallelization Pattern for Babuk Ransomware</div>
+  <div id=date>2021/09/06 13:37</div>
+  <div>
+<p>In my <a href="https://tacix.at/posts/Babuk%20Source%20Code%20Leak%20-%20Golang%20Encryptor.html">previous post</a> analyzing the <a href="https://gist.github.com/TACIXAT/92f04e033939136aa0171ff29a726e7a">Babuk Golang source code</a> I commented on the worker pattern. It would start a batch of threads but not kick off any more jobs until the slowest one completed. If you had 4 threads, you can imagine a case where 3 encrypt small files and then sit and do nothing while 1 finishes encrypting a very large file.</p>
+
+<p>I&rsquo;ve made a reproduction of theirs and then an alternative pattern using a workers and a job channel. To make a fair comparison, I keep a fixed set of jobs so both instances are processing the same data. The data processing is actually just sleeping for a random amount of seconds, but it will be the same random amount of seconds each time. At the top of our <code>main()</code> function we have some tunables and then we set up the jobs.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">numWorkers <span style="color:#f92672">:=</span> <span style="color:#ae81ff">4</span>
+numJobs <span style="color:#f92672">:=</span> <span style="color:#ae81ff">9</span>
+<span style="color:#66d9ef">var</span> wg sync.WaitGroup
+
+rand.<span style="color:#a6e22e">Seed</span>(<span style="color:#ae81ff">1337</span>)
+fixedJobs <span style="color:#f92672">:=</span> make([]Job, numJobs)
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; i &lt; numJobs; i<span style="color:#f92672">++</span> {
+	fixedJobs[i] = Job{
+		Id: i,
+		Seconds: time.<span style="color:#a6e22e">Duration</span>(rand.<span style="color:#a6e22e">Intn</span>(<span style="color:#ae81ff">8</span>)<span style="color:#f92672">+</span><span style="color:#ae81ff">2</span>),
+	}
+}
+</pre>
+<p>The Babuk worker is simple, it just processes the job then marks itself as done in the <code>WaitGroup</code>.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">worker</span>(wg <span style="color:#f92672">*</span>sync.WaitGroup, id <span style="color:#66d9ef">int</span>, job Job) {
+	<span style="color:#66d9ef">defer</span> wg.<span style="color:#a6e22e">Done</span>()
+
+	log.<span style="color:#a6e22e">Printf</span>(
+		<span style="color:#e6db74">&#34;Worker %d: pretending to work for %d seconds for job %d&#34;</span>, 
+		id, job.Seconds, job.Id)
+	time.<span style="color:#a6e22e">Sleep</span>(job.Seconds <span style="color:#f92672">*</span> time.Second)
+	log.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Worker %d: finished job %d&#34;</span>, id, job.Id);
+}
+</pre>
+<p>Back in <code>main()</code> they jobs are passed to a Go thread, we pass in the index of the jobs as the worker ID, and the job struct which consists of a job ID and a duration in seconds. We add 1 to the <code>activeWorkers</code> count. When the <code>activeWorkers</code> count reaches <code>numWorkers</code> we wait for the <code>WaitGroup</code> to finish, reset the count, then continue.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">start <span style="color:#f92672">:=</span> time.<span style="color:#a6e22e">Now</span>()
+activeWorkers <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>
+<span style="color:#66d9ef">for</span> i, j <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> fixedJobs {
+	<span style="color:#66d9ef">go</span> <span style="color:#a6e22e">worker</span>(<span style="color:#f92672">&amp;</span>wg, i, j)
+	wg.<span style="color:#a6e22e">Add</span>(<span style="color:#ae81ff">1</span>)
+	activeWorkers <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+	<span style="color:#66d9ef">if</span> activeWorkers <span style="color:#f92672">==</span> numWorkers {
+		wg.<span style="color:#a6e22e">Wait</span>()
+		activeWorkers = <span style="color:#ae81ff">0</span>
+	}
+}
+wg.<span style="color:#a6e22e">Wait</span>()
+log.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;processed %d jobs in %s\n\n&#34;</span>, numJobs, time.<span style="color:#a6e22e">Since</span>(start))
+</pre>
+<p>As stated before, this will cause jobs to happen in batches and be blocked by the slowest job. You can see this happening in the output below. In total, it took 26 seconds to process these random jobs.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">2021/09/06 16:22:56 Worker 3: pretending to work for 5 seconds for job 3
+2021/09/06 16:22:56 Worker 1: pretending to work for 8 seconds for job 1
+2021/09/06 16:22:56 Worker 0: pretending to work for 4 seconds for job 0
+2021/09/06 16:22:56 Worker 2: pretending to work for 9 seconds for job 2
+2021/09/06 16:23:00 Worker 0: finished job 0
+2021/09/06 16:23:01 Worker 3: finished job 3
+2021/09/06 16:23:04 Worker 1: finished job 1
+2021/09/06 16:23:05 Worker 2: finished job 2
+2021/09/06 16:23:05 Worker 4: pretending to work for 6 seconds for job 4
+2021/09/06 16:23:05 Worker 5: pretending to work for 6 seconds for job 5
+2021/09/06 16:23:05 Worker 6: pretending to work for 8 seconds for job 6
+2021/09/06 16:23:05 Worker 7: pretending to work for 3 seconds for job 7
+2021/09/06 16:23:08 Worker 7: finished job 7
+2021/09/06 16:23:11 Worker 5: finished job 5
+2021/09/06 16:23:11 Worker 4: finished job 4
+2021/09/06 16:23:13 Worker 6: finished job 6
+2021/09/06 16:23:13 Worker 8: pretending to work for 9 seconds for job 8
+2021/09/06 16:23:22 Worker 8: finished job 8
+2021/09/06 16:23:22 processed 9 jobs in 26.0143759s
+</pre>
+<h2>Revised Worker</h2>
+
+<p>For our code we will start <code>numWorkers</code> of Go threads. Then we will place the jobs into a channel. A channel is a bit like a thread safe queue. Workers will pull jobs out of the channel and process them, and then grab the next. This allows all workers to be fully occupied. We use a job ID of <code>-1</code> as a sentinel value, letting the workers know that they are done.</p>
+
+<p>Our <code>main()</code> method will start the workers, queue the jobs, add a <code>numWorkers</code> number of <code>-1</code>s to the queue, then wait on the <code>WaitGroup</code>.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">start = time.<span style="color:#a6e22e">Now</span>()
+jobs <span style="color:#f92672">:=</span> make(<span style="color:#66d9ef">chan</span> Job)
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; i &lt; numWorkers; i<span style="color:#f92672">++</span> {
+	<span style="color:#66d9ef">go</span> <span style="color:#a6e22e">queueWorker</span>(<span style="color:#f92672">&amp;</span>wg, i, jobs)
+	wg.<span style="color:#a6e22e">Add</span>(<span style="color:#ae81ff">1</span>)
+}
+
+<span style="color:#66d9ef">for</span> _, j <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> fixedJobs {
+	jobs <span style="color:#f92672">&lt;-</span> j
+}
+
+<span style="color:#66d9ef">for</span> i <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; i &lt; numWorkers; i<span style="color:#f92672">++</span> {
+	jobs <span style="color:#f92672">&lt;-</span> Job{
+		Id: <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>,
+	}
+}
+
+wg.<span style="color:#a6e22e">Wait</span>()
+log.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;processed %d jobs in %s&#34;</span>, numJobs, time.<span style="color:#a6e22e">Since</span>(start))
+</pre>
+<p>The worker is a little bit more complex. It has an infinite loop, grabs a job out of the channel, if it is a negative <code>job.Id</code> it will exit, if not it does the same processing as the other worker.</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">queueWorker</span>(wg <span style="color:#f92672">*</span>sync.WaitGroup, id <span style="color:#66d9ef">int</span>, jobs <span style="color:#66d9ef">chan</span> Job) {
+	<span style="color:#66d9ef">defer</span> wg.<span style="color:#a6e22e">Done</span>()
+
+	<span style="color:#66d9ef">for</span> {
+		job <span style="color:#f92672">:=</span> <span style="color:#f92672">&lt;-</span>jobs
+
+		<span style="color:#66d9ef">if</span> job.Id &lt; <span style="color:#ae81ff">0</span> {
+			<span style="color:#66d9ef">return</span>
+		}
+
+		log.<span style="color:#a6e22e">Printf</span>(
+			<span style="color:#e6db74">&#34;Worker %d: pretending to work for %d seconds for job %d&#34;</span>, 
+			id, job.Seconds, job.Id)
+		time.<span style="color:#a6e22e">Sleep</span>(job.Seconds <span style="color:#f92672">*</span> time.Second)
+		log.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Worker %d: finished job %d&#34;</span>, id, job.Id);
+	}
+}
+</pre>
+<p>Now, when a worker finishes their job, they can immediately move on to the next job. There is no blocking on the slowest of the group. Now, it processes all jobs in 19 seconds!</p>
+<pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">2021/09/06 16:23:22 Worker 0: pretending to work for 4 seconds for job 0
+2021/09/06 16:23:22 Worker 2: pretending to work for 5 seconds for job 3
+2021/09/06 16:23:22 Worker 3: pretending to work for 8 seconds for job 1
+2021/09/06 16:23:22 Worker 1: pretending to work for 9 seconds for job 2
+2021/09/06 16:23:26 Worker 0: finished job 0
+2021/09/06 16:23:26 Worker 0: pretending to work for 6 seconds for job 4
+2021/09/06 16:23:27 Worker 2: finished job 3
+2021/09/06 16:23:27 Worker 2: pretending to work for 6 seconds for job 5
+2021/09/06 16:23:30 Worker 3: finished job 1
+2021/09/06 16:23:30 Worker 3: pretending to work for 8 seconds for job 6
+2021/09/06 16:23:31 Worker 1: finished job 2
+2021/09/06 16:23:31 Worker 1: pretending to work for 3 seconds for job 7
+2021/09/06 16:23:32 Worker 0: finished job 4
+2021/09/06 16:23:32 Worker 0: pretending to work for 9 seconds for job 8
+2021/09/06 16:23:33 Worker 2: finished job 5
+2021/09/06 16:23:34 Worker 1: finished job 7
+2021/09/06 16:23:38 Worker 3: finished job 6
+2021/09/06 16:23:41 Worker 0: finished job 8
+2021/09/06 16:23:41 processed 9 jobs in 19.0381034s
+</pre>
+<p>There could always be a reason for the pattern they chose, perhaps to not saturate disk or cores in some way. That said, if you are looking to utilize cores to the fullest this pattern is much more efficient.</p>
+
+  </div>
+
+  </div>
+
+  <footer>
+    <a id=rss-link href="/rss.xml">rss</a>
+  </footer>
+</body>
+</html>
