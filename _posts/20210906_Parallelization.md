@@ -38,14 +38,14 @@ func worker(wg *sync.WaitGroup, id int, job Job) {
 }
 ```
 
-Back in `main()` they jobs are passed to a Go thread, we pass in the index of the jobs as the worker ID, and the job struct which consists of a job ID and a duration in seconds. We add 1 to the `activeWorkers` count. When the `activeWorkers` count reaches `numWorkers` we wait for the `WaitGroup` to finish, reset the count, then continue.
+Back in `main()` they jobs are passed to a Go thread, we pass in the index of the jobs as the worker ID, and the job struct which consists of a job ID and a duration in seconds. It is important to call `wg.Add(1)` prior to starting to Go thread, as pointed out by [/u/peterbourgon](https://www.reddit.com/r/golang/comments/pjcf90/a_better_parallelization_pattern_for_babuk/hbxbot9/?context=3). Calling it after can cause a panic if the Go thread calls `wg.Done()` before the main thread calls `wg.Add(1)`. We add 1 to the `activeWorkers` count. When the `activeWorkers` count reaches `numWorkers` we wait for the `WaitGroup` to finish, reset the count, then continue. 
 
 ```golang
 start := time.Now()
 activeWorkers := 0
 for i, j := range fixedJobs {
-	go worker(&wg, i, j)
 	wg.Add(1)
+	go worker(&wg, i, j)
 	activeWorkers += 1
 	if activeWorkers == numWorkers {
 		wg.Wait()
@@ -91,8 +91,8 @@ Our `main()` method will start the workers, queue the jobs, add a `numWorkers` n
 start = time.Now()
 jobs := make(chan Job)
 for i := 0; i < numWorkers; i++ {
-	go queueWorker(&wg, i, jobs)
 	wg.Add(1)
+	go queueWorker(&wg, i, jobs)
 }
 
 for _, j := range fixedJobs {

@@ -5,7 +5,7 @@
     <description>Personal projects in programming and the dark arts..</description>
     <managingEditor> (Taci Xat)</managingEditor>
     <pubDate>Mon, 18 May 2020 12:18:00 -0700</pubDate>
-    <lastBuildDate>Mon, 06 Sep 2021 17:51:31 -0700</lastBuildDate>
+    <lastBuildDate>Tue, 07 Sep 2021 12:14:49 -0700</lastBuildDate>
     <item>
       <title>A Better Parallelization Pattern for Babuk Ransomware</title>
       <link>https://tacix.at/posts/A Better Parallelization Pattern for Babuk Ransomware.html</link>
@@ -37,12 +37,12 @@ fixedJobs <span style="color:#f92672">:=</span> make([]Job, numJobs)
 	log.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Worker %d: finished job %d&#34;</span>, id, job.Id);
 }
 </pre>
-<p>Back in <code>main()</code> they jobs are passed to a Go thread, we pass in the index of the jobs as the worker ID, and the job struct which consists of a job ID and a duration in seconds. We add 1 to the <code>activeWorkers</code> count. When the <code>activeWorkers</code> count reaches <code>numWorkers</code> we wait for the <code>WaitGroup</code> to finish, reset the count, then continue.</p>
+<p>Back in <code>main()</code> they jobs are passed to a Go thread, we pass in the index of the jobs as the worker ID, and the job struct which consists of a job ID and a duration in seconds. It is important to call <code>wg.Add(1)</code> prior to starting to Go thread, as pointed out by <a href="https://www.reddit.com/r/golang/comments/pjcf90/a_better_parallelization_pattern_for_babuk/hbxbot9/?context=3">/u/peterbourgon</a>. Calling it after can cause a panic if the Go thread calls <code>wg.Done()</code> before the main thread calls <code>wg.Add(1)</code>. We add 1 to the <code>activeWorkers</code> count. When the <code>activeWorkers</code> count reaches <code>numWorkers</code> we wait for the <code>WaitGroup</code> to finish, reset the count, then continue.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">start <span style="color:#f92672">:=</span> time.<span style="color:#a6e22e">Now</span>()
 activeWorkers <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>
 <span style="color:#66d9ef">for</span> i, j <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> fixedJobs {
-	<span style="color:#66d9ef">go</span> <span style="color:#a6e22e">worker</span>(<span style="color:#f92672">&amp;</span>wg, i, j)
 	wg.<span style="color:#a6e22e">Add</span>(<span style="color:#ae81ff">1</span>)
+	<span style="color:#66d9ef">go</span> <span style="color:#a6e22e">worker</span>(<span style="color:#f92672">&amp;</span>wg, i, j)
 	activeWorkers <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
 	<span style="color:#66d9ef">if</span> activeWorkers <span style="color:#f92672">==</span> numWorkers {
 		wg.<span style="color:#a6e22e">Wait</span>()
@@ -82,8 +82,8 @@ log.<span style="color:#a6e22e">Printf</span>(
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">start = time.<span style="color:#a6e22e">Now</span>()
 jobs <span style="color:#f92672">:=</span> make(<span style="color:#66d9ef">chan</span> Job)
 <span style="color:#66d9ef">for</span> i <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>; i &lt; numWorkers; i<span style="color:#f92672">++</span> {
-	<span style="color:#66d9ef">go</span> <span style="color:#a6e22e">queueWorker</span>(<span style="color:#f92672">&amp;</span>wg, i, jobs)
 	wg.<span style="color:#a6e22e">Add</span>(<span style="color:#ae81ff">1</span>)
+	<span style="color:#66d9ef">go</span> <span style="color:#a6e22e">queueWorker</span>(<span style="color:#f92672">&amp;</span>wg, i, jobs)
 }
 
 <span style="color:#66d9ef">for</span> _, j <span style="color:#f92672">:=</span> <span style="color:#66d9ef">range</span> fixedJobs {
