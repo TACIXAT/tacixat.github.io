@@ -5,7 +5,7 @@
     <description>Personal projects in programming and the dark arts..</description>
     <managingEditor> (Taci Xat)</managingEditor>
     <pubDate>Mon, 18 May 2020 12:18:00 -0700</pubDate>
-    <lastBuildDate>Mon, 06 Sep 2021 17:07:58 -0700</lastBuildDate>
+    <lastBuildDate>Mon, 06 Sep 2021 17:20:25 -0700</lastBuildDate>
     <item>
       <title>A Better Parallelization Pattern for Babuk Ransomware</title>
       <link>https://tacix.at/posts/A Better Parallelization Pattern for Babuk Ransomware.html</link>
@@ -50,7 +50,8 @@ activeWorkers <span style="color:#f92672">:=</span> <span style="color:#ae81ff">
 	}
 }
 wg.<span style="color:#a6e22e">Wait</span>()
-log.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;processed %d jobs in %s\n\n&#34;</span>, numJobs, time.<span style="color:#a6e22e">Since</span>(start))
+log.<span style="color:#a6e22e">Printf</span>(
+	<span style="color:#e6db74">&#34;processed %d jobs in %s\n\n&#34;</span>, numJobs, time.<span style="color:#a6e22e">Since</span>(start))
 </pre>
 <p>As stated before, this will cause jobs to happen in batches and be blocked by the slowest job. You can see this happening in the output below. In total, it took 26 seconds to process these random jobs.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">2021/09/06 16:22:56 Worker 3: pretending to work for 5 seconds for job 3
@@ -96,7 +97,8 @@ jobs <span style="color:#f92672">:=</span> make(<span style="color:#66d9ef">chan
 }
 
 wg.<span style="color:#a6e22e">Wait</span>()
-log.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;processed %d jobs in %s&#34;</span>, numJobs, time.<span style="color:#a6e22e">Since</span>(start))
+log.<span style="color:#a6e22e">Printf</span>(
+	<span style="color:#e6db74">&#34;processed %d jobs in %s&#34;</span>, numJobs, time.<span style="color:#a6e22e">Since</span>(start))
 </pre>
 <p>The worker is a little bit more complex. It has an infinite loop, grabs a job out of the channel, if it is a negative <code>job.Id</code> it will exit, if not it does the same processing as the other worker.</p>
 <pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">queueWorker</span>(wg <span style="color:#f92672">*</span>sync.WaitGroup, id <span style="color:#66d9ef">int</span>, jobs <span style="color:#66d9ef">chan</span> Job) {
@@ -110,7 +112,8 @@ log.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;p
 		}
 
 		log.<span style="color:#a6e22e">Printf</span>(
-			<span style="color:#e6db74">&#34;Worker %d: pretending to work for %d seconds for job %d&#34;</span>, 
+			<span style="color:#e6db74">&#34;Worker %d: pretending to work &#34;</span> <span style="color:#f92672">+</span>
+			<span style="color:#e6db74">&#34;for %d seconds for job %d&#34;</span>, 
 			id, job.Seconds, job.Id)
 		time.<span style="color:#a6e22e">Sleep</span>(job.Seconds <span style="color:#f92672">*</span> time.Second)
 		log.<span style="color:#a6e22e">Printf</span>(<span style="color:#e6db74">&#34;Worker %d: finished job %d&#34;</span>, id, job.Id);

@@ -53,7 +53,8 @@ for i, j := range fixedJobs {
 	}
 }
 wg.Wait()
-log.Printf("processed %d jobs in %s\n\n", numJobs, time.Since(start))
+log.Printf(
+	"processed %d jobs in %s\n\n", numJobs, time.Since(start))
 ```
 
 As stated before, this will cause jobs to happen in batches and be blocked by the slowest job. You can see this happening in the output below. In total, it took 26 seconds to process these random jobs.
@@ -105,7 +106,8 @@ for i := 0; i < numWorkers; i++ {
 }
 
 wg.Wait()
-log.Printf("processed %d jobs in %s", numJobs, time.Since(start))
+log.Printf(
+	"processed %d jobs in %s", numJobs, time.Since(start))
 ```
 
 The worker is a little bit more complex. It has an infinite loop, grabs a job out of the channel, if it is a negative `job.Id` it will exit, if not it does the same processing as the other worker.
@@ -122,7 +124,8 @@ func queueWorker(wg *sync.WaitGroup, id int, jobs chan Job) {
 		}
 
 		log.Printf(
-			"Worker %d: pretending to work for %d seconds for job %d", 
+			"Worker %d: pretending to work " +
+			"for %d seconds for job %d", 
 			id, job.Seconds, job.Id)
 		time.Sleep(job.Seconds * time.Second)
 		log.Printf("Worker %d: finished job %d", id, job.Id);
